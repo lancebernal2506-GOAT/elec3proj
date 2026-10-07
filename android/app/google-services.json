@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "65173926856",
+    "project_id": "elec3-b4180",
+    "storage_bucket": "elec3-b4180.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:65173926856:android:4ea9051eb56ec975d946fd",
+        "android_client_info": {
+          "package_name": "com.example.elec3proj"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC-tBmFPhbRjq6YucoVDBhUOeN71602vbU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
