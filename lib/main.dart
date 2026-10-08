@@ -16,26 +16,27 @@ import 'firebase_options.dart';
 // ═════════ core ═════════
 
 // ───────── Theme ─────────
-const kRed = Color(0xFF38D6B0); // primary teal
-const kDarkRed = Color(0xFF153B3A);
-const kBlack = Color(0xFF0B1220);
-const kCard = Color(0xFF151F30);
-const kMuted = Color(0xFF9AAAC0);
+const kRed = Color(0xFF8B8CFF); // violet blue
+const kDarkRed = Color(0xFF292B58);
+const kBlack = Color(0xFF0D111C);
+const kCard = Color(0xFF191F2E);
+const kMuted = Color(0xFFA6B0C2);
 
 ThemeData appTheme() => ThemeData(
       brightness: Brightness.dark,
       useMaterial3: true,
       scaffoldBackgroundColor: kBlack,
       colorScheme: const ColorScheme.dark(
-          primary: kRed, secondary: Color(0xFFA3E635), surface: kCard,
+          primary: kRed, secondary: Color(0xFF4CE0C1), surface: kCard,
           onSurface: Color(0xFFE8EEF7)),
-      fontFamily: 'Roboto',
+      fontFamily: 'Arial',
       appBarTheme: const AppBarTheme(
         backgroundColor: kBlack,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
         scrolledUnderElevation: 0,
+        titleTextStyle: TextStyle(color: Color(0xFFE8EEF7), fontSize: 19, fontWeight: FontWeight.w700),
       ),
       cardTheme: CardThemeData(
         color: kCard,
@@ -43,7 +44,7 @@ ThemeData appTheme() => ThemeData(
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
-          side: const BorderSide(color: Color(0xFF263449)),
+          side: const BorderSide(color: Color(0xFF2A3348)),
         ),
       ),
       drawerTheme: const DrawerThemeData(backgroundColor: kBlack),
@@ -51,7 +52,7 @@ ThemeData appTheme() => ThemeData(
         border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(14))),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(14)),
-          borderSide: BorderSide(color: Color(0xFF33445D)),
+          borderSide: BorderSide(color: Color(0xFF35415A)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(14)),
@@ -626,17 +627,49 @@ class _HomeShellState extends State<HomeShell> {
     final desktop = MediaQuery.sizeOf(context).width >= 900;
     return Scaffold(
       appBar: AppBar(
+        leadingWidth: 58,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: IconButton(
+            tooltip: 'Go to dashboard',
+            onPressed: () => setState(() => index = 0),
+            icon: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(colors: [Color(0xFF34376D), Color(0xFF174C52)]),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.fitness_center_rounded, color: Color(0xFF4CE0C1), size: 21),
+            ),
+          ),
+        ),
         title: Text(items[index].$1),
         actions: [
+          if (!desktop)
+            Builder(builder: (drawerContext) => IconButton(
+              tooltip: 'Open navigation menu',
+              icon: const Icon(Icons.menu_rounded),
+              onPressed: () => Scaffold.of(drawerContext).openDrawer(),
+            )),
           IconButton(tooltip: 'Logout', icon: const Icon(Icons.logout), onPressed: () => _logout()),
         ],
       ),
       drawer: desktop ? null : Drawer(
         child: ListView(children: [
           DrawerHeader(
-            decoration: const BoxDecoration(color: kDarkRed),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(colors: [Color(0xFF292B58), Color(0xFF174C52)]),
+            ),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.end, children: [
-              const Icon(Icons.fitness_center, size: 40),
+              InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () { Navigator.pop(context); setState(() => index = 0); },
+                child: const Padding(
+                  padding: EdgeInsets.all(4),
+                  child: Icon(Icons.fitness_center_rounded, size: 34, color: Color(0xFF4CE0C1)),
+                ),
+              ),
               const SizedBox(height: 8),
               Text(Auth.admin?['fullName'] ?? '', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const Text('Administrator'),
@@ -734,61 +767,61 @@ class DashboardPage extends StatelessWidget {
           ];
 
           return LayoutBuilder(builder: (context, constraints) {
-            final wide = constraints.maxWidth >= 900;
-            final pageWidth = wide ? 1240.0 : double.infinity;
+            final maxWidth = constraints.maxWidth >= 900 ? 1120.0 : double.infinity;
             return ListView(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
               children: [
                 Center(
                   child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: pageWidth),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF153B3A), Color(0xFF17283C)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(22),
-                          border: Border.all(color: kRed.withValues(alpha: .24)),
-                        ),
-                        child: Row(children: [
-                          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            const Text('ACTIVE SYNC  /  OVERVIEW', style: TextStyle(color: kRed, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.3)),
-                            const SizedBox(height: 10),
-                            Text('Welcome back, ${Auth.admin?['fullName'] ?? 'Admin'}',
-                              style: const TextStyle(fontSize: 23, height: 1.15, fontWeight: FontWeight.w700)),
-                            const SizedBox(height: 5),
-                            Text(DateFormat('EEEE, MMMM d').format(DateTime.now()), style: const TextStyle(color: kMuted)),
-                          ])),
-                          const SizedBox(width: 14),
-                          Container(
-                            width: 52, height: 52,
-                            decoration: BoxDecoration(color: kRed.withValues(alpha: .14), borderRadius: BorderRadius.circular(17)),
-                            child: const Icon(Icons.bolt_rounded, color: kRed, size: 29),
-                          ),
+                    constraints: BoxConstraints(maxWidth: maxWidth),
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(18),
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Row(children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(colors: [Color(0xFF34376D), Color(0xFF174C52)]),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: const Icon(Icons.bolt_rounded, color: Color(0xFF4CE0C1), size: 25),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              Text('Welcome, ${Auth.admin?['fullName'] ?? 'Admin'}',
+                                maxLines: 1, overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w700)),
+                              const SizedBox(height: 3),
+                              Text(DateFormat('EEEE, MMMM d').format(DateTime.now()),
+                                style: const TextStyle(color: kMuted, fontSize: 12)),
+                            ])),
+                          ]),
+                          const SizedBox(height: 18),
+                          const Divider(height: 1, color: Color(0xFF2A3348)),
+                          const SizedBox(height: 16),
+                          Row(children: [
+                            const Expanded(child: Text('Business overview', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700))),
+                            Text('${cards.length} metrics', style: const TextStyle(color: kMuted, fontSize: 11)),
+                          ]),
+                          const SizedBox(height: 10),
+                          LayoutBuilder(builder: (_, c) {
+                            final cols = c.maxWidth >= 1020 ? 5 : c.maxWidth >= 650 ? 3 : 2;
+                            final ratio = c.maxWidth < 390 ? 1.35 : 1.55;
+                            return GridView.count(
+                              crossAxisCount: cols,
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              mainAxisSpacing: 9,
+                              crossAxisSpacing: 9,
+                              childAspectRatio: ratio,
+                              children: cards,
+                            );
+                          }),
                         ]),
                       ),
-                      const SizedBox(height: 24),
-                      const Text('Your business at a glance', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 12),
-                      LayoutBuilder(builder: (_, c) {
-                        final cols = c.maxWidth >= 1050 ? 5 : c.maxWidth >= 620 ? 3 : 2;
-                        final ratio = c.maxWidth < 390 ? .98 : c.maxWidth < 620 ? 1.12 : 1.45;
-                        return GridView.count(
-                          crossAxisCount: cols,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          mainAxisSpacing: 12,
-                          crossAxisSpacing: 12,
-                          childAspectRatio: ratio,
-                          children: cards,
-                        );
-                      }),
-                    ]),
+                    ),
                   ),
                 ),
               ],
@@ -805,24 +838,29 @@ class _Stat extends StatelessWidget {
   final IconData icon;
   const _Stat(this.label, this.value, this.icon);
   @override
-  Widget build(BuildContext context) => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(color: kRed.withValues(alpha: .13), borderRadius: BorderRadius.circular(11)),
-              child: Icon(icon, color: kRed, size: 19),
-            ),
-            const Spacer(),
-            FittedBox(alignment: Alignment.centerLeft, fit: BoxFit.scaleDown,
-              child: Text(value, maxLines: 1, style: const TextStyle(fontSize: 25, height: 1, fontWeight: FontWeight.w700))),
-            const SizedBox(height: 7),
-            Text(label, maxLines: 2, overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: kMuted, fontSize: 12, height: 1.15)),
-          ]),
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFF20283A),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFF303A50)),
         ),
+        child: Row(children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(color: kRed.withValues(alpha: .14), borderRadius: BorderRadius.circular(11)),
+            child: Icon(icon, color: kRed, size: 18),
+          ),
+          const SizedBox(width: 9),
+          Expanded(child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            FittedBox(alignment: Alignment.centerLeft, fit: BoxFit.scaleDown,
+              child: Text(value, maxLines: 1, style: const TextStyle(fontSize: 19, height: 1.05, fontWeight: FontWeight.w700))),
+            const SizedBox(height: 4),
+            Text(label, maxLines: 2, overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: kMuted, fontSize: 10, height: 1.1)),
+          ])),
+        ]),
       );
 }
 
