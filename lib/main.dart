@@ -23,6 +23,13 @@ const kBlack = Color(0xFFF6F5FA);
 const kCard = Color(0xFFFFFFFF);
 const kMuted = Color(0xFF74758A);
 const kError = Color(0xFFB3261E);
+// Gym-floor additions: dark "rubber mat" chrome + a gradient "floor tape" accent.
+const kInk = Color(0xFF191433);
+const kInkSoft = Color(0xFF2E2370);
+const kPink = Color(0xFFD886A7);
+const kLilac = Color(0xFFBDB2FF);
+const kText = Color(0xFF25243A);
+const kTape = LinearGradient(colors: [kRed, kPink]);
 
 ThemeData appTheme() => ThemeData(
       brightness: Brightness.light,
@@ -30,28 +37,31 @@ ThemeData appTheme() => ThemeData(
       scaffoldBackgroundColor: kBlack,
       colorScheme: const ColorScheme.light(
         primary: kRed,
-        secondary: Color(0xFFD886A7),
+        secondary: kPink,
         surface: kCard,
-        onSurface: Color(0xFF25243A),
-        error: Color(0xFFB3261E),
+        onSurface: kText,
+        error: kError,
       ),
       fontFamily: 'Manrope',
       textTheme: ThemeData.light().textTheme.apply(
         fontFamily: 'Manrope',
-        bodyColor: const Color(0xFF25243A),
-        displayColor: const Color(0xFF25243A),
+        bodyColor: kText,
+        displayColor: kText,
       ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(color: kRed),
       appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.white,
-        foregroundColor: Color(0xFF25243A),
+        backgroundColor: kInk,
+        foregroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
         scrolledUnderElevation: 0,
-        titleTextStyle: TextStyle(fontFamily: 'Manrope', color: Color(0xFF25243A), fontSize: 19, fontWeight: FontWeight.w700),
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+        titleTextStyle: TextStyle(fontFamily: 'Manrope', color: Colors.white, fontSize: 19, fontWeight: FontWeight.w800, letterSpacing: -.2),
       ),
       cardTheme: CardThemeData(
         color: kCard,
-        elevation: 1,
+        elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
@@ -59,23 +69,32 @@ ThemeData appTheme() => ThemeData(
         ),
       ),
       drawerTheme: const DrawerThemeData(
+        backgroundColor: kInk,
+        surfaceTintColor: Colors.transparent,
+        scrimColor: Color(0x990D1020),
+      ),
+      dialogTheme: DialogThemeData(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
-        scrimColor: Color(0x550D1020),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        titleTextStyle: const TextStyle(fontFamily: 'Manrope', color: kText, fontSize: 19, fontWeight: FontWeight.w800),
       ),
-      inputDecorationTheme: const InputDecorationTheme(
-        border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(14))),
-        enabledBorder: OutlineInputBorder(
+      inputDecorationTheme: InputDecorationTheme(
+        border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(14))),
+        enabledBorder: const OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(14)),
           borderSide: BorderSide(color: Color(0xFFE1DFEA)),
         ),
-        focusedBorder: OutlineInputBorder(
+        focusedBorder: const OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(14)),
-          borderSide: BorderSide(color: kRed, width: 1.6),
+          borderSide: BorderSide(color: kRed, width: 1.8),
         ),
         filled: true,
-        fillColor: Color(0xFFFBFAFD),
-        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        fillColor: const Color(0xFFFBFAFD),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        floatingLabelStyle: const TextStyle(color: kRed, fontWeight: FontWeight.w700),
+        prefixIconColor: WidgetStateColor.resolveWith(
+            (states) => states.contains(WidgetState.focused) ? kRed : kMuted),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Colors.white,
@@ -87,21 +106,47 @@ ThemeData appTheme() => ThemeData(
         )),
       ),
       navigationRailTheme: const NavigationRailThemeData(
-        backgroundColor: Colors.white,
-        selectedIconTheme: IconThemeData(color: kRed),
-        unselectedIconTheme: IconThemeData(color: kMuted),
-        selectedLabelTextStyle: TextStyle(color: kRed, fontWeight: FontWeight.w600),
+        backgroundColor: kInk,
+        indicatorColor: kRed,
+        selectedIconTheme: IconThemeData(color: Colors.white),
+        unselectedIconTheme: IconThemeData(color: Color(0xFF9B93C9)),
+        selectedLabelTextStyle: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+        unselectedLabelTextStyle: TextStyle(color: Color(0xFF9B93C9), fontWeight: FontWeight.w600),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
             backgroundColor: kRed,
             foregroundColor: Colors.white,
             minimumSize: const Size.fromHeight(50),
+            textStyle: const TextStyle(fontFamily: 'Manrope', fontWeight: FontWeight.w800, fontSize: 15, letterSpacing: .2),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            elevation: 1),
+            elevation: 0),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: kDarkRed,
+          minimumSize: const Size(0, 44),
+          side: const BorderSide(color: Color(0xFFD6D1F0), width: 1.3),
+          textStyle: const TextStyle(fontFamily: 'Manrope', fontWeight: FontWeight.w700),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: kRed,
+          textStyle: const TextStyle(fontFamily: 'Manrope', fontWeight: FontWeight.w800),
+        ),
+      ),
+      dataTableTheme: const DataTableThemeData(
+        headingRowColor: WidgetStatePropertyAll(Color(0xFFEFECFA)),
+        headingTextStyle: TextStyle(fontWeight: FontWeight.w800, color: kText, fontSize: 13),
+        dataTextStyle: TextStyle(fontSize: 13, color: kText),
+        dividerThickness: .6,
+        headingRowHeight: 46,
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: const Color(0xFF302C43),
+        backgroundColor: kInk,
+        contentTextStyle: const TextStyle(fontFamily: 'Manrope', color: Colors.white, fontWeight: FontWeight.w600),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
@@ -172,38 +217,272 @@ Future<bool> confirm(BuildContext c, String title, String msg) async {
 
 class EmptyState extends StatelessWidget {
   final String text;
-  const EmptyState(this.text, {super.key});
+  final IconData icon;
+  const EmptyState(this.text, {this.icon = Icons.fitness_center_rounded, super.key});
   @override
   Widget build(BuildContext context) => Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.inbox, size: 56, color: kMuted.withValues(alpha: .55)),
-            const SizedBox(height: 8),
-            Text(text, style: const TextStyle(color: kMuted)),
+            Container(
+              width: 76,
+              height: 76,
+              decoration: BoxDecoration(color: kRed.withValues(alpha: .1), shape: BoxShape.circle),
+              child: Icon(icon, size: 34, color: kRed.withValues(alpha: .7)),
+            ),
+            const SizedBox(height: 14),
+            Text(text, textAlign: TextAlign.center, style: const TextStyle(color: kMuted, fontWeight: FontWeight.w600)),
           ]),
         ),
       );
 }
+
+Color statusColor(String status) => switch (status) {
+      'Active' => const Color(0xFF1E9E5A),
+      'Expiring Soon' => const Color(0xFFE88A00),
+      'Frozen' => const Color(0xFF2A9DF4),
+      _ => kError,
+    };
 
 class StatusChip extends StatelessWidget {
   final String status;
   const StatusChip(this.status, {super.key});
   @override
   Widget build(BuildContext context) {
-    final c = switch (status) {
-      'Active' => Colors.green,
-      'Expiring Soon' => Colors.orange,
-      'Frozen' => Colors.lightBlue,
-      _ => kError,
-    };
+    final c = statusColor(status);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(color: c.withValues(alpha: .13), borderRadius: BorderRadius.circular(8)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Container(width: 6, height: 6, decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
+        const SizedBox(width: 6),
+        Text(status, style: TextStyle(color: c, fontSize: 11.5, fontWeight: FontWeight.w800)),
+      ]),
+    );
+  }
+}
+
+/// Thin gradient strip — the "gym floor tape" used as the app's signature accent.
+class _Tape extends StatelessWidget {
+  final double height;
+  const _Tape([this.height = 3]);
+  @override
+  Widget build(BuildContext context) =>
+      Container(height: height, decoration: const BoxDecoration(gradient: kTape));
+}
+
+class SectionTitle extends StatelessWidget {
+  final String text;
+  const SectionTitle(this.text, {super.key});
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: 4, bottom: 10),
+        child: Row(children: [
+          Container(
+            width: 4,
+            height: 18,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [kRed, kPink]),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(text, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: -.2)),
+        ]),
+      );
+}
+
+class _Initials extends StatelessWidget {
+  final String name;
+  final double size;
+  const _Initials(this.name, {this.size = 44});
+  @override
+  Widget build(BuildContext context) {
+    final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    final text = parts.isEmpty
+        ? '?'
+        : (parts.length == 1 ? parts.first[0] : parts.first[0] + parts.last[0]).toUpperCase();
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
-          color: c.withValues(alpha: .2),
-          border: Border.all(color: c),
-          borderRadius: BorderRadius.circular(12)),
-      child: Text(status, style: TextStyle(color: c, fontSize: 12)),
+        gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [kRed, kDarkRed]),
+        borderRadius: BorderRadius.circular(size * .3),
+      ),
+      child: Text(text, style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: size * .36)),
+    );
+  }
+}
+
+/// Member card with a status-coloured stripe down the left edge.
+class MemberCard extends StatelessWidget {
+  final Color stripe;
+  final Widget child;
+  const MemberCard({required this.stripe, required this.child, super.key});
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Material(
+          color: kCard,
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFFE9E7F0)),
+          ),
+          child: Stack(children: [
+            Positioned(left: 0, top: 0, bottom: 0, width: 5, child: ColoredBox(color: stripe)),
+            Padding(padding: const EdgeInsets.fromLTRB(19, 14, 14, 12), child: child),
+          ]),
+        ),
+      );
+}
+
+class _MemberHeader extends StatelessWidget {
+  final Map<String, dynamic> m;
+  final String status;
+  const _MemberHeader(this.m, this.status);
+  @override
+  Widget build(BuildContext context) => Row(children: [
+        _Initials('${m['fullName'] ?? ''}'),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('${m['fullName']}',
+                maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 2),
+            Row(children: [
+              Text('#${m['memberId']}', style: const TextStyle(color: kRed, fontWeight: FontWeight.w800, fontSize: 12.5)),
+              const SizedBox(width: 8),
+              Text('${m['membershipType']}', style: const TextStyle(color: kMuted, fontWeight: FontWeight.w600, fontSize: 12.5)),
+            ]),
+          ]),
+        ),
+        const SizedBox(width: 8),
+        StatusChip(status),
+      ]);
+}
+
+class _Info extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _Info(this.icon, this.text);
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: 5),
+        child: Row(children: [
+          Icon(icon, size: 16, color: kMuted),
+          const SizedBox(width: 8),
+          Expanded(child: Text(text, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13.5))),
+        ]),
+      );
+}
+
+class _ActionBtn extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String tooltip;
+  final VoidCallback onTap;
+  const _ActionBtn(this.icon, this.color, this.tooltip, this.onTap);
+  @override
+  Widget build(BuildContext context) => Tooltip(
+        message: tooltip,
+        child: Material(
+          color: color.withValues(alpha: .1),
+          borderRadius: BorderRadius.circular(10),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: onTap,
+            child: SizedBox(width: 40, height: 40, child: Icon(icon, size: 20, color: color)),
+          ),
+        ),
+      );
+}
+
+ButtonStyle tonalIcon() => IconButton.styleFrom(
+      backgroundColor: kRed.withValues(alpha: .12),
+      foregroundColor: kRed,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    );
+
+/// Energy-bar style countdown for the time left on a membership.
+class _ExpiryBar extends StatelessWidget {
+  final DateTime exp;
+  final int planDays;
+  final Color color;
+  const _ExpiryBar({required this.exp, required this.planDays, required this.color});
+  @override
+  Widget build(BuildContext context) {
+    final left = daysLeft(exp);
+    final v = planDays <= 0 ? 0.0 : (left / planDays).clamp(0.0, 1.0).toDouble();
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Text('Expires ${fmtDate(exp)}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+        Text(left == 1 ? '1 day left' : '$left days left',
+            style: TextStyle(color: color, fontWeight: FontWeight.w800, fontSize: 13)),
+      ]),
+      const SizedBox(height: 7),
+      ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: LinearProgressIndicator(
+          value: v,
+          minHeight: 7,
+          backgroundColor: color.withValues(alpha: .15),
+          valueColor: AlwaysStoppedAnimation<Color>(color),
+        ),
+      ),
+    ]);
+  }
+}
+
+/// Pass-style plan selector (Daily / Weekly / Monthly).
+class _PlanPicker extends StatelessWidget {
+  final String selected;
+  final ValueChanged<String> onChanged;
+  const _PlanPicker({required this.selected, required this.onChanged});
+  @override
+  Widget build(BuildContext context) => Row(children: [
+        for (final e in plans.entries) ...[
+          Expanded(child: _PlanTile(e.key, e.value, e.key == selected, () => onChanged(e.key))),
+          if (e.key != plans.keys.last) const SizedBox(width: 8),
+        ],
+      ]);
+}
+
+class _PlanTile extends StatelessWidget {
+  final String name;
+  final Plan plan;
+  final bool on;
+  final VoidCallback onTap;
+  const _PlanTile(this.name, this.plan, this.on, this.onTap);
+  @override
+  Widget build(BuildContext context) {
+    final fg = on ? Colors.white : kText;
+    return Material(
+      color: on ? kRed : const Color(0xFFFBFAFD),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: on ? kDarkRed : const Color(0xFFE1DFEA), width: on ? 1.6 : 1),
+          ),
+          child: Column(children: [
+            Text(name, style: TextStyle(color: fg, fontWeight: FontWeight.w800, fontSize: 13)),
+            const SizedBox(height: 4),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(money(plan.price), style: TextStyle(color: fg, fontWeight: FontWeight.w800, fontSize: 16)),
+            ),
+            const SizedBox(height: 2),
+            Text(plan.days == 1 ? '1 day' : '${plan.days} days',
+                style: TextStyle(color: on ? Colors.white70 : kMuted, fontSize: 11.5, fontWeight: FontWeight.w600)),
+          ]),
+        ),
+      ),
     );
   }
 }
@@ -482,22 +761,58 @@ class _AuthFrame extends StatelessWidget {
   const _AuthFrame({required this.title, required this.children});
   @override
   Widget build(BuildContext context) => Scaffold(
-        body: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(children: [
-                const Icon(Icons.fitness_center, size: 64, color: kRed),
-                const Text('FitCore',
-                    style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Text(title, style: const TextStyle(color: kMuted)),
-                const SizedBox(height: 24),
-                ...children,
-              ]),
-            ),
+        backgroundColor: kInk,
+        body: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [kInk, kInkSoft]),
           ),
+          child: Stack(children: [
+            Positioned(
+              right: -50,
+              bottom: -30,
+              child: Transform.rotate(
+                angle: -.35,
+                child: Icon(Icons.fitness_center_rounded, size: 300, color: Colors.white.withValues(alpha: .04)),
+              ),
+            ),
+            SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: Column(children: [
+                      Container(
+                        width: 68,
+                        height: 68,
+                        decoration: BoxDecoration(gradient: kTape, borderRadius: BorderRadius.circular(20)),
+                        child: const Icon(Icons.fitness_center_rounded, size: 36, color: Colors.white),
+                      ),
+                      const SizedBox(height: 14),
+                      const Text('FitCore',
+                          style: TextStyle(fontSize: 34, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: -.5)),
+                      const SizedBox(height: 4),
+                      Text(title, style: const TextStyle(color: kLilac, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 24),
+                      Container(
+                        clipBehavior: Clip.antiAlias,
+                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
+                        child: Column(children: [
+                          const _Tape(4),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                            child: Column(children: children),
+                          ),
+                        ]),
+                      ),
+                    ]),
+                  ),
+                ),
+              ),
+            ),
+          ]),
         ),
       );
 }
@@ -535,7 +850,7 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(children: [
             TextFormField(
               controller: idC,
-              decoration: const InputDecoration(labelText: 'Username or Email', prefixIcon: Icon(Icons.person)),
+              decoration: const InputDecoration(labelText: 'Username or Email', prefixIcon: Icon(Icons.person_outline)),
               validator: reqRule,
             ),
             const SizedBox(height: 12),
@@ -544,9 +859,9 @@ class _LoginPageState extends State<LoginPage> {
               obscureText: hide,
               decoration: InputDecoration(
                 labelText: 'Password',
-                prefixIcon: const Icon(Icons.lock),
+                prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
-                    icon: Icon(hide ? Icons.visibility : Icons.visibility_off),
+                    icon: Icon(hide ? Icons.visibility_outlined : Icons.visibility_off_outlined),
                     onPressed: () => setState(() => hide = !hide)),
               ),
               validator: reqRule,
@@ -568,7 +883,7 @@ class _LoginPageState extends State<LoginPage> {
             ElevatedButton(
               onPressed: busy ? null : _login,
               child: busy
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : const Text('Login'),
             ),
             TextButton(
@@ -624,24 +939,24 @@ class _RegisterPageState extends State<RegisterPage> {
         Form(
           key: _form,
           child: Column(children: [
-            TextFormField(controller: nameC, decoration: const InputDecoration(labelText: 'Full Name'), validator: reqRule),
+            TextFormField(controller: nameC, decoration: const InputDecoration(labelText: 'Full Name', prefixIcon: Icon(Icons.badge_outlined)), validator: reqRule),
             const SizedBox(height: 12),
             TextFormField(
                 controller: emailC,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(labelText: 'Email'),
+                decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.mail_outline)),
                 validator: emailRule),
             const SizedBox(height: 12),
             TextFormField(
               controller: userC,
-              decoration: const InputDecoration(labelText: 'Username'),
+              decoration: const InputDecoration(labelText: 'Username', prefixIcon: Icon(Icons.alternate_email)),
               validator: (v) => (v == null || v.trim().length < 3) ? 'At least 3 characters' : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: pwC,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'Password'),
+              decoration: const InputDecoration(labelText: 'Password', prefixIcon: Icon(Icons.lock_outline)),
               validator: (v) => (v == null || v.length < 6) ? 'At least 6 characters' : null,
             ),
             CheckboxListTile(
@@ -660,7 +975,7 @@ class _RegisterPageState extends State<RegisterPage> {
             ElevatedButton(
                 onPressed: busy ? null : _register,
                 child: busy
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : const Text('Register')),
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('Back to Login')),
           ]),
@@ -743,7 +1058,7 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
     final desktop = MediaQuery.sizeOf(context).width >= 900;
     return Scaffold(
       appBar: AppBar(
-        leadingWidth: 58,
+        leadingWidth: 64,
         leading: Padding(
           padding: const EdgeInsets.only(left: 8),
           child: IconButton(
@@ -752,11 +1067,8 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
             icon: Container(
               width: 38,
               height: 38,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [Color(0xFFE8E5FF), Color(0xFFFCEAF1)]),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.fitness_center_rounded, color: kRed, size: 21),
+              decoration: BoxDecoration(gradient: kTape, borderRadius: BorderRadius.circular(12)),
+              child: const Icon(Icons.fitness_center_rounded, color: Colors.white, size: 21),
             ),
           ),
         ),
@@ -768,6 +1080,7 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
             onPressed: () => Scaffold.of(drawerContext).openDrawer(),
           )),
         ],
+        bottom: const PreferredSize(preferredSize: Size.fromHeight(3), child: _Tape()),
       ),
       onDrawerChanged: (isOpen) {
         if (isOpen) {
@@ -777,40 +1090,68 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
         }
       },
       drawer: Drawer(
-        child: ListView(children: [
+        child: ListView(padding: EdgeInsets.zero, children: [
           DrawerHeader(
+            margin: EdgeInsets.zero,
             decoration: const BoxDecoration(
-              gradient: LinearGradient(colors: [Color(0xFF6857D9), Color(0xFFB46D96)]),
+              border: Border(),
+              gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [kInkSoft, kInk]),
             ),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.end, children: [
               InkWell(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 onTap: () { Navigator.pop(context); setState(() => index = 0); },
-                child: const Padding(
-                  padding: EdgeInsets.all(4),
-                  child: Icon(Icons.fitness_center_rounded, size: 34, color: Colors.white),
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(gradient: kTape, borderRadius: BorderRadius.circular(16)),
+                  child: const Icon(Icons.fitness_center_rounded, size: 26, color: Colors.white),
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(Auth.admin?['fullName'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-              const Text('Administrator', style: TextStyle(color: Color(0xFFF3EFFF))),
+              const SizedBox(height: 12),
+              Text(Auth.admin?['fullName'] ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 2),
+              const Text('Administrator', style: TextStyle(color: kLilac, fontWeight: FontWeight.w600, fontSize: 12.5)),
             ]),
           ),
+          const _Tape(),
+          const SizedBox(height: 10),
           for (var i = 0; i < items.length; i++)
-            ListTile(
-              leading: Icon(items[i].$2, color: i == index ? kRed : kMuted),
-              title: Text(items[i].$1),
-              selected: i == index,
-              selectedColor: kRed,
-              selectedTileColor: kRed.withValues(alpha: .09),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() => index = i);
-              },
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+              child: ListTile(
+                leading: Icon(items[i].$2),
+                title: Text(items[i].$1, style: const TextStyle(fontWeight: FontWeight.w700)),
+                selected: i == index,
+                selectedColor: Colors.white,
+                selectedTileColor: kRed,
+                iconColor: const Color(0xFF9B93C9),
+                textColor: const Color(0xFFD9D4F5),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                onTap: () {
+                  Navigator.pop(context);
+                  setState(() => index = i);
+                },
+              ),
             ),
-          const Divider(),
-          ListTile(leading: const Icon(Icons.logout), title: const Text('Logout'), onTap: () => _logout(closeDrawer: true)),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+            child: Divider(color: Color(0x22FFFFFF), height: 1),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+            child: ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Logout', style: TextStyle(fontWeight: FontWeight.w700)),
+              iconColor: kPink,
+              textColor: kPink,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              onTap: () => _logout(closeDrawer: true),
+            ),
+          ),
         ]),
       ),
       body: desktop
@@ -821,7 +1162,6 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
                 onDestinationSelected: (value) => setState(() => index = value),
                 destinations: [for (final item in items) NavigationRailDestination(icon: Icon(item.$2), label: Text(item.$1))],
               ),
-              const VerticalDivider(width: 1),
               Expanded(
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 260),
@@ -876,14 +1216,8 @@ class DashboardPage extends StatelessWidget {
           final soon = members.where((m) => statusOf(m) == 'Expiring Soon').length;
           final expired = members.where((m) => statusOf(m) == 'Expired').length;
           final fresh = members.where((m) => dt(m['createdAt']).isAfter(cutoff)).length;
-
-          final cards = [
-            _Stat('Total Members', '${members.length}', Icons.groups),
-            _Stat('Expiring Soon', '$soon', Icons.hourglass_bottom),
-            _Stat('Total Revenue', money(revenue), Icons.payments),
-            _Stat('New Members', '$fresh', Icons.person_add_alt_1),
-            _Stat('Expired Memberships', '$expired', Icons.event_busy),
-          ];
+          final active = members.where((m) => statusOf(m) == 'Active').length;
+          final adminName = (Auth.admin?['fullName'] ?? 'Admin').toString();
 
           return LayoutBuilder(builder: (context, constraints) {
             final maxWidth = constraints.maxWidth >= 900 ? 780.0 : double.infinity;
@@ -894,39 +1228,18 @@ class DashboardPage extends StatelessWidget {
                   child: ConstrainedBox(
                     constraints: BoxConstraints(maxWidth: maxWidth),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [Color(0xFFEAE7FF), Color(0xFFFCEAF1)]),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: kRed.withValues(alpha: .22)),
-                        ),
-                        child: Row(children: [
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: .72), borderRadius: BorderRadius.circular(13)),
-                            child: const Icon(Icons.bolt_rounded, color: kRed, size: 24),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Text('Welcome, ${Auth.admin?['fullName'] ?? 'Admin'}',
-                              maxLines: 1, overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                            const SizedBox(height: 3),
-                            Text(DateFormat('EEEE, MMMM d').format(DateTime.now()),
-                              style: const TextStyle(color: kMuted, fontSize: 12)),
-                          ])),
+                      _Hero(name: adminName, total: members.length, active: active, fresh: fresh),
+                      const SizedBox(height: 22),
+                      const SectionTitle('The gym at one glance'),
+                      IntrinsicHeight(
+                        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                          Expanded(child: _Stat('Expiring Soon', '$soon', Icons.hourglass_bottom, color: const Color(0xFFE88A00))),
+                          const SizedBox(width: 10),
+                          Expanded(child: _Stat('Expired Memberships', '$expired', Icons.event_busy, color: kError)),
                         ]),
                       ),
-                      const SizedBox(height: 20),
-                      const Text('The gym at one glance', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                       const SizedBox(height: 10),
-                      for (final card in cards) Padding(
-                        padding: const EdgeInsets.only(bottom: 9),
-                        child: card,
-                      ),
+                      _Stat('Total Revenue', money(revenue), Icons.payments, wide: true),
                     ]),
                   ),
                 ),
@@ -939,37 +1252,138 @@ class DashboardPage extends StatelessWidget {
   }
 }
 
+/// Dark "scoreboard" header: the one bold moment on the dashboard.
+class _Hero extends StatelessWidget {
+  final String name;
+  final int total, active, fresh;
+  const _Hero({required this.name, required this.total, required this.active, required this.fresh});
+
+  @override
+  Widget build(BuildContext context) {
+    final pct = total == 0 ? 0.0 : active / total;
+    return Container(
+      width: double.infinity,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [kInk, kInkSoft]),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Stack(children: [
+        Positioned(
+          right: -22,
+          top: -18,
+          child: Transform.rotate(
+            angle: .45,
+            child: Icon(Icons.fitness_center_rounded, size: 170, color: Colors.white.withValues(alpha: .06)),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(DateFormat('EEEE, MMMM d').format(DateTime.now()),
+                style: const TextStyle(color: kLilac, fontSize: 12.5, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 6),
+            Text('Welcome, $name',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -.3)),
+            const SizedBox(height: 24),
+            Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Expanded(flex: 4, child: _HeroFigure('$total', 'Total Members', big: true)),
+              Expanded(flex: 3, child: _HeroFigure('$active', 'Active')),
+              Expanded(flex: 3, child: _HeroFigure('$fresh', 'New Members')),
+            ]),
+            const SizedBox(height: 20),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: LinearProgressIndicator(
+                value: pct,
+                minHeight: 8,
+                backgroundColor: Colors.white.withValues(alpha: .12),
+                valueColor: const AlwaysStoppedAnimation<Color>(kLilac),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text('${(pct * 100).round()}% of members are active',
+                style: const TextStyle(color: Color(0xFFB4ACDA), fontSize: 12, fontWeight: FontWeight.w600)),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
+
+class _HeroFigure extends StatelessWidget {
+  final String value, label;
+  final bool big;
+  const _HeroFigure(this.value, this.label, {this.big = false});
+  @override
+  Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(value,
+              style: TextStyle(color: Colors.white, fontSize: big ? 46 : 28, height: 1, fontWeight: FontWeight.w800, letterSpacing: -1)),
+        ),
+        const SizedBox(height: 6),
+        Text(label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Color(0xFFB4ACDA), fontSize: 12, fontWeight: FontWeight.w600)),
+      ]);
+}
+
 class _Stat extends StatelessWidget {
   final String label, value;
   final IconData icon;
-  const _Stat(this.label, this.value, this.icon);
+  final Color color;
+  final bool wide;
+  const _Stat(this.label, this.value, this.icon, {this.color = kRed, this.wide = false});
+
   @override
-  Widget build(BuildContext context) => Container(
-        width: double.infinity,
-        constraints: const BoxConstraints(minHeight: 72),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: kCard,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE5E2ED)),
-        ),
-        child: Row(children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(color: kRed.withValues(alpha: .14), borderRadius: BorderRadius.circular(12)),
-            child: Icon(icon, color: kRed, size: 20),
-          ),
-          const SizedBox(width: 9),
-          Expanded(child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            FittedBox(alignment: Alignment.centerLeft, fit: BoxFit.scaleDown,
-              child: Text(value, maxLines: 1, style: const TextStyle(fontSize: 20, height: 1.05, fontWeight: FontWeight.w700))),
-            const SizedBox(height: 3),
-            Text(label, maxLines: 2, overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: kMuted, fontSize: 11, height: 1.1)),
-          ])),
-        ]),
-      );
+  Widget build(BuildContext context) {
+    final badge = Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(color: color.withValues(alpha: .13), borderRadius: BorderRadius.circular(12)),
+      child: Icon(icon, color: color, size: 21),
+    );
+    final number = FittedBox(
+      alignment: wide ? Alignment.centerRight : Alignment.centerLeft,
+      fit: BoxFit.scaleDown,
+      child: Text(value,
+          maxLines: 1,
+          style: TextStyle(fontSize: wide ? 26 : 30, height: 1.05, fontWeight: FontWeight.w800, letterSpacing: -.5)),
+    );
+    final caption = Text(label,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(color: kMuted, fontSize: 12.5, fontWeight: FontWeight.w600, height: 1.15));
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: kCard,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE5E2ED)),
+      ),
+      child: wide
+          ? Row(children: [
+              badge,
+              const SizedBox(width: 12),
+              Expanded(child: caption),
+              const SizedBox(width: 8),
+              Flexible(child: number),
+            ])
+          : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              badge,
+              const SizedBox(height: 14),
+              number,
+              const SizedBox(height: 4),
+              caption,
+            ]),
+    );
+  }
 }
 
 // ═════════ members ═════════
@@ -1020,53 +1434,63 @@ class _AddMemberPageState extends State<AddMemberPage> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 640),
             child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Form(
-                  key: _form,
-                  child: Column(children: [
-            TextFormField(controller: nameC, decoration: const InputDecoration(labelText: 'Full Name'), validator: reqRule),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: contactC,
-              keyboardType: TextInputType.phone,
-              maxLength: 10,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(10)],
-              decoration: const InputDecoration(labelText: 'Mobile Number', prefixText: '+63 ', counterText: ''),
-              validator: (v) => (v == null || !RegExp(r'^9\d{9}$').hasMatch(v.trim())) ? 'Enter 10 digits starting with 9' : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-                controller: emailC,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(labelText: 'Email'),
-                validator: emailRule),
-            const SizedBox(height: 12),
-            TextFormField(controller: addressC, decoration: const InputDecoration(labelText: 'Address'), validator: reqRule),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              initialValue: type,
-              decoration: const InputDecoration(labelText: 'Membership Type'),
-              items: plans.keys.map((t) => DropdownMenuItem(value: t, child: Text(planLabel(t)))).toList(),
-              onChanged: (v) => setState(() => type = v!),
-            ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Expires: ${fmtDate(DateTime.now().add(Duration(days: plans[type]!.days)))}',
-                style: const TextStyle(color: kMuted),
-              ),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-                onPressed: busy ? null : _save,
-                child: busy
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('Save Member')),
-                  ]),
+              clipBehavior: Clip.antiAlias,
+              child: Column(children: [
+                const _Tape(4),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Form(
+                    key: _form,
+                    child: Column(children: [
+                      TextFormField(controller: nameC, decoration: const InputDecoration(labelText: 'Full Name', prefixIcon: Icon(Icons.person_outline)), validator: reqRule),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: contactC,
+                        keyboardType: TextInputType.phone,
+                        maxLength: 10,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(10)],
+                        decoration: const InputDecoration(labelText: 'Mobile Number', prefixIcon: Icon(Icons.phone_outlined), prefixText: '+63 ', counterText: ''),
+                        validator: (v) => (v == null || !RegExp(r'^9\d{9}$').hasMatch(v.trim())) ? 'Enter 10 digits starting with 9' : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                          controller: emailC,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.mail_outline)),
+                          validator: emailRule),
+                      const SizedBox(height: 12),
+                      TextFormField(controller: addressC, decoration: const InputDecoration(labelText: 'Address', prefixIcon: Icon(Icons.location_on_outlined)), validator: reqRule),
+                      const SizedBox(height: 20),
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text('Membership Type', style: TextStyle(fontWeight: FontWeight.w800)),
+                      ),
+                      const SizedBox(height: 10),
+                      _PlanPicker(selected: type, onChanged: (v) => setState(() => type = v)),
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(color: kRed.withValues(alpha: .08), borderRadius: BorderRadius.circular(12)),
+                        child: Row(children: [
+                          const Icon(Icons.event_available_outlined, size: 18, color: kRed),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Expires: ${fmtDate(DateTime.now().add(Duration(days: plans[type]!.days)))}',
+                            style: const TextStyle(color: kDarkRed, fontWeight: FontWeight.w700),
+                          ),
+                        ]),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                          onPressed: busy ? null : _save,
+                          child: busy
+                              ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : const Text('Save Member')),
+                    ]),
+                  ),
                 ),
-              ),
+              ]),
             ),
           ),
         ),
@@ -1156,7 +1580,7 @@ class _ManageMembersPageState extends State<ManageMembersPage> {
   @override
   Widget build(BuildContext context) => Column(children: [
         Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
           child: Row(children: [
             Expanded(
               child: TextField(
@@ -1165,12 +1589,16 @@ class _ManageMembersPageState extends State<ManageMembersPage> {
                 onChanged: (_) => setState(() {}),
               ),
             ),
+            const SizedBox(width: 8),
             IconButton(
+              style: tonalIcon(),
               tooltip: asc ? 'Member ID ascending' : 'Member ID descending',
               icon: Icon(asc ? Icons.arrow_upward : Icons.arrow_downward),
               onPressed: () => setState(() { asc = !asc; stream = _make(); }),
             ),
+            const SizedBox(width: 4),
             IconButton(
+              style: tonalIcon(),
               tooltip: 'Reset',
               icon: const Icon(Icons.refresh),
               onPressed: () => setState(() { searchC.clear(); asc = true; stream = _make(); }),
@@ -1189,39 +1617,33 @@ class _ManageMembersPageState extends State<ManageMembersPage> {
                   .toList();
               if (docs.isEmpty) return const EmptyState('No members found.');
               return ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
                 itemCount: docs.length,
                 itemBuilder: (_, i) {
                   final m = docs[i].data() as Map<String, dynamic>;
                   final id = docs[i].id;
                   final st = statusOf(m);
-                  return Card(
-                    color: kCard,
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Row(children: [
-                          Text('#${m['memberId']}', style: const TextStyle(color: kRed, fontWeight: FontWeight.bold)),
-                          const SizedBox(width: 8),
-                          Expanded(child: Text(m['fullName'], style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
-                          StatusChip(st),
-                        ]),
-                        const SizedBox(height: 6),
-                        Text('📞 ${m['contact']}'),
-                        Text('✉ ${m['email']}'),
-                        Text('📍 ${m['address']}'),
-                        Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                          IconButton(tooltip: 'Edit', icon: const Icon(Icons.edit), onPressed: () => _edit(id, m)),
-                          IconButton(tooltip: 'Delete', icon: const Icon(Icons.delete, color: kRed), onPressed: () => _delete(id, m['fullName'])),
-                          IconButton(tooltip: 'Print', icon: const Icon(Icons.print), onPressed: () => PdfService.memberRecord(m, st)),
-                          IconButton(
-                            tooltip: m['status'] == 'Frozen' ? 'Unfreeze' : 'Freeze',
-                            icon: Icon(m['status'] == 'Frozen' ? Icons.play_circle : Icons.ac_unit, color: Colors.lightBlue),
-                            onPressed: () => _toggleFreeze(id, m),
-                          ),
-                        ]),
+                  final frozen = m['status'] == 'Frozen';
+                  return MemberCard(
+                    stripe: statusColor(st),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      _MemberHeader(m, st),
+                      const SizedBox(height: 8),
+                      _Info(Icons.phone_outlined, '${m['contact']}'),
+                      _Info(Icons.mail_outline, '${m['email']}'),
+                      _Info(Icons.location_on_outlined, '${m['address']}'),
+                      const SizedBox(height: 12),
+                      Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                        _ActionBtn(Icons.edit_outlined, kRed, 'Edit', () => _edit(id, m)),
+                        const SizedBox(width: 8),
+                        _ActionBtn(Icons.print_outlined, kMuted, 'Print', () => PdfService.memberRecord(m, st)),
+                        const SizedBox(width: 8),
+                        _ActionBtn(frozen ? Icons.play_circle_outline : Icons.ac_unit, const Color(0xFF2A9DF4),
+                            frozen ? 'Unfreeze' : 'Freeze', () => _toggleFreeze(id, m)),
+                        const SizedBox(width: 8),
+                        _ActionBtn(Icons.delete_outline, kError, 'Delete', () => _delete(id, m['fullName'])),
                       ]),
-                    ),
+                    ]),
                   );
                 },
               );
@@ -1246,12 +1668,7 @@ class RenewalPage extends StatelessWidget {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, set) => AlertDialog(
           title: Text('Renew ${m['fullName']}'),
-          content: DropdownButtonFormField<String>(
-            initialValue: type,
-            decoration: const InputDecoration(labelText: 'Membership Type'),
-            items: plans.keys.map((t) => DropdownMenuItem(value: t, child: Text(planLabel(t)))).toList(),
-            onChanged: (v) => set(() => type = v!),
-          ),
+          content: _PlanPicker(selected: type, onChanged: (v) => set(() => type = v)),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
             TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text('Pay ${money(plans[type]!.price)}')),
@@ -1278,36 +1695,29 @@ class RenewalPage extends StatelessWidget {
             itemBuilder: (_, i) {
               final m = docs[i].data() as Map<String, dynamic>;
               final exp = dt(m['expirationDate']);
-              return Card(
-                color: kCard,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(children: [
-                      Text('#${m['memberId']}', style: const TextStyle(color: kRed, fontWeight: FontWeight.bold)),
-                      const SizedBox(width: 8),
-                      Expanded(child: Text(m['fullName'], style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
-                      StatusChip(statusOf(m)),
-                    ]),
-                    const SizedBox(height: 6),
-                    Text('${m['contact']}  •  ${m['email']}'),
-                    Text('Type: ${m['membershipType']}'),
-                    Text('Expires: ${fmtDate(exp)}  (${daysLeft(exp)} days remaining)'),
-                    Text('Added: ${fmtDateTime(dt(m['createdAt']))}', style: const TextStyle(color: kMuted)),
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: SizedBox(
-                        width: 130,
-                        child: ElevatedButton.icon(
-                          onPressed: () => _renew(context, docs[i].id, m),
-                          icon: const Icon(Icons.autorenew),
-                          label: const Text('Renew'),
-                        ),
-                      ),
+              final st = statusOf(m);
+              final planDays = plans[m['membershipType']]?.days ?? 30;
+              return MemberCard(
+                stripe: statusColor(st),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  _MemberHeader(m, st),
+                  const SizedBox(height: 12),
+                  _ExpiryBar(exp: exp, planDays: planDays, color: statusColor(st)),
+                  const SizedBox(height: 6),
+                  _Info(Icons.phone_outlined, '${m['contact']}'),
+                  _Info(Icons.mail_outline, '${m['email']}'),
+                  _Info(Icons.history, 'Added ${fmtDateTime(dt(m['createdAt']))}'),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(minimumSize: const Size(140, 44)),
+                      onPressed: () => _renew(context, docs[i].id, m),
+                      icon: const Icon(Icons.autorenew),
+                      label: const Text('Renew'),
                     ),
-                  ]),
-                ),
+                  ),
+                ]),
               );
             },
           );
@@ -1317,9 +1727,17 @@ class RenewalPage extends StatelessWidget {
 
 // ═════════ finance ═════════
 
-Widget _hscroll(Widget table) => SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: ConstrainedBox(constraints: const BoxConstraints(minWidth: 600), child: table),
+Widget _hscroll(Widget table) => Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: kCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE9E7F0)),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(constraints: const BoxConstraints(minWidth: 600), child: table),
+      ),
     );
 
 // ───────── Member Payments Tracker ─────────
@@ -1354,7 +1772,15 @@ class _PaymentsTrackerPageState extends State<PaymentsTrackerPage> {
     return Column(children: [
       Padding(
         padding: const EdgeInsets.all(12),
-        child: Wrap(spacing: 8, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: kCard,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE9E7F0)),
+          ),
+          child: Wrap(spacing: 8, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
           SizedBox(
             width: 180,
             child: TextField(controller: nameC, decoration: const InputDecoration(labelText: 'Member name', isDense: true)),
@@ -1377,7 +1803,7 @@ class _PaymentsTrackerPageState extends State<PaymentsTrackerPage> {
             }),
             child: const Text('Reset'),
           ),
-        ]),
+        ])),
       ),
       Expanded(
         child: StreamBuilder<QuerySnapshot>(
@@ -1395,6 +1821,7 @@ class _PaymentsTrackerPageState extends State<PaymentsTrackerPage> {
             }).toList();
             if (rows.isEmpty) return const EmptyState('No payments match.');
             return SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
               child: _hscroll(DataTable(
                 columns: const [
                   DataColumn(label: Text('ID')),
@@ -1464,7 +1891,7 @@ class _ExpensesPageState extends State<ExpensesPage> {
 
   @override
   Widget build(BuildContext context) => ListView(padding: const EdgeInsets.all(16), children: [
-        Form(
+        Card(child: Padding(padding: const EdgeInsets.all(16), child: Form(
           key: _form,
           child: Column(children: [
             DropdownButtonFormField<String>(
@@ -1487,10 +1914,10 @@ class _ExpensesPageState extends State<ExpensesPage> {
             ElevatedButton(
                 onPressed: busy ? null : _save,
                 child: busy
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : const Text('Save Expense')),
           ]),
-        ),
+        ))),
         const SizedBox(height: 20),
         StreamBuilder<QuerySnapshot>(
           stream: stream,
@@ -1500,16 +1927,27 @@ class _ExpensesPageState extends State<ExpensesPage> {
             final list = snap.data!.docs.map((d) => d.data() as Map<String, dynamic>).toList();
             final total = list.fold<double>(0, (s, e) => s + (e['amount'] as num));
             return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Card(
-                color: kCard,
-                child: ListTile(
-                  leading: const Icon(Icons.money_off, color: kRed),
-                  title: const Text('Total Expenses'),
-                  trailing: Text(money(total), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: kCard,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE9E7F0)),
                 ),
+                child: Row(children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(color: kError.withValues(alpha: .1), borderRadius: BorderRadius.circular(12)),
+                    child: const Icon(Icons.money_off, color: kError, size: 21),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(child: Text('Total Expenses', style: TextStyle(color: kMuted, fontWeight: FontWeight.w700))),
+                  Text(money(total), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -.3)),
+                ]),
               ),
-              const SizedBox(height: 8),
-              const Text('Expense History', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              const SectionTitle('Expense History'),
               if (list.isEmpty)
                 const EmptyState('No expenses recorded.')
               else
@@ -1602,19 +2040,19 @@ class _GrossIncomePageState extends State<GrossIncomePage> {
                 ),
               ]),
               const SizedBox(height: 16),
-              Card(
-                color: kCard,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: kDarkRed)),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(children: [
-                    _row('Date Range', range),
-                    _row('Total Income', money(income)),
-                    _row('Total Expenses', money(expenses)),
-                    const Divider(),
-                    _row('Net Income', money(net), color: net >= 0 ? Colors.green : kRed, big: true),
-                  ]),
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [kInk, kInkSoft]),
+                  borderRadius: BorderRadius.circular(22),
                 ),
+                child: Column(children: [
+                  _row('Date Range', range),
+                  _row('Total Income', money(income)),
+                  _row('Total Expenses', money(expenses)),
+                  const Divider(color: Color(0x33FFFFFF), height: 22),
+                  _row('Net Income', money(net), color: net >= 0 ? const Color(0xFF5BE3A0) : const Color(0xFFFF8FA3), big: true),
+                ]),
               ),
               const SizedBox(height: 12),
               ElevatedButton.icon(
@@ -1628,7 +2066,7 @@ class _GrossIncomePageState extends State<GrossIncomePage> {
                 label: const Text('Print Report'),
               ),
               const SizedBox(height: 16),
-              const Text('Income Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SectionTitle('Income Details'),
               if (pays.isEmpty)
                 const EmptyState('No income in this date range.')
               else
@@ -1657,8 +2095,13 @@ class _GrossIncomePageState extends State<GrossIncomePage> {
   Widget _row(String l, String v, {Color? color, bool big = false}) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text(l, style: const TextStyle(color: kMuted)),
-          Flexible(child: Text(v, textAlign: TextAlign.right, style: TextStyle(color: color, fontSize: big ? 22 : 16, fontWeight: FontWeight.bold))),
+          Text(l, style: const TextStyle(color: Color(0xFFB4ACDA), fontWeight: FontWeight.w600)),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Text(v,
+                textAlign: TextAlign.right,
+                style: TextStyle(color: color ?? Colors.white, fontSize: big ? 26 : 16, fontWeight: FontWeight.w800, letterSpacing: big ? -.4 : 0)),
+          ),
         ]),
       );
 }
@@ -1667,6 +2110,8 @@ class _GrossIncomePageState extends State<GrossIncomePage> {
 
 /// Note: the default PDF font has no ₱ glyph, so PDFs use the "PHP" prefix.
 class PdfService {
+  static final PdfColor _brandViolet = PdfColor.fromInt(0xFF6857D9);
+
   static pw.Widget _line(String k, String v) => pw.Padding(
         padding: const pw.EdgeInsets.symmetric(vertical: 4),
         child: pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
@@ -1679,7 +2124,7 @@ class PdfService {
     final doc = pw.Document();
     doc.addPage(pw.Page(
       build: (_) => pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-        pw.Text('ActiveSync', style: pw.TextStyle(fontSize: 26, fontWeight: pw.FontWeight.bold, color: PdfColors.red800)),
+        pw.Text('FitCore', style: pw.TextStyle(fontSize: 26, fontWeight: pw.FontWeight.bold, color: _brandViolet)),
         pw.Text('Member Record'),
         pw.Divider(),
         _line('Member ID', '${m['memberId']}'),
@@ -1708,7 +2153,7 @@ class PdfService {
     final doc = pw.Document();
     doc.addPage(pw.MultiPage(
       build: (_) => [
-        pw.Text('ActiveSync', style: pw.TextStyle(fontSize: 26, fontWeight: pw.FontWeight.bold, color: PdfColors.red800)),
+        pw.Text('FitCore', style: pw.TextStyle(fontSize: 26, fontWeight: pw.FontWeight.bold, color: _brandViolet)),
         pw.Text('Gross Income Report'),
         pw.Divider(),
         _line('Date Range', range),
@@ -1724,7 +2169,7 @@ class PdfService {
           pw.TableHelper.fromTextArray(
             headers: ['Date', 'Member', 'Type', 'Amount'],
             data: rows,
-            headerDecoration: const pw.BoxDecoration(color: PdfColors.red800),
+            headerDecoration: pw.BoxDecoration(color: _brandViolet),
             headerStyle: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold),
             cellAlignment: pw.Alignment.centerLeft,
           ),
@@ -1782,13 +2227,19 @@ class _StartupScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
+        backgroundColor: kInk,
         body: Center(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Icons.fitness_center, size: 64, color: kRed),
+            Container(
+              width: 76,
+              height: 76,
+              decoration: BoxDecoration(gradient: kTape, borderRadius: BorderRadius.circular(22)),
+              child: const Icon(Icons.fitness_center_rounded, size: 40, color: Colors.white),
+            ),
+            const SizedBox(height: 24),
+            const SizedBox(width: 26, height: 26, child: CircularProgressIndicator(strokeWidth: 3, color: kLilac)),
             const SizedBox(height: 16),
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            Text(message, style: const TextStyle(color: kMuted)),
+            Text(message, style: const TextStyle(color: Color(0xFFB4ACDA), fontWeight: FontWeight.w600)),
           ]),
         ),
       );
