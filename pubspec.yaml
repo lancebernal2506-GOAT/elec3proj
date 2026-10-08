@@ -36,6 +36,7 @@ dependencies:
   cloud_firestore: any
   firebase_auth: any
   firebase_core: any
+  google_sign_in: ^7.2.0
   crypto: any
   intl: any
   shared_preferences: any

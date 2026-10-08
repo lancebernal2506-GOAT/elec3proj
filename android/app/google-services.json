@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "65173926856",
+    "firebase_url": "https://elec3-b4180-default-rtdb.asia-southeast1.firebasedatabase.app",
     "project_id": "elec3-b4180",
     "storage_bucket": "elec3-b4180.firebasestorage.app"
   },
@@ -12,7 +13,12 @@
           "package_name": "com.example.elec3proj"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "65173926856-8ki6s3qdvr384tcnrotgu9c62pouh82d.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyC-tBmFPhbRjq6YucoVDBhUOeN71602vbU"
@@ -20,7 +26,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "65173926856-8ki6s3qdvr384tcnrotgu9c62pouh82d.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "65173926856-4ij69cucgomh071p0pmhddmik7ase17l.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.elec3proj"
+              }
+            }
+          ]
         }
       }
     }

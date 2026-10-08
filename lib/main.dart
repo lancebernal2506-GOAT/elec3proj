@@ -5,8 +5,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -578,6 +580,103 @@ Future<void> renewMember(String docId, Map<String, dynamic> m, String type) asyn
 class Auth {
   static Map<String, dynamic>? admin;
   static final FirebaseAuth _firebase = FirebaseAuth.instance;
+  static Future<void>? _googleInitialization;
+  static const _googleWebClientId =
+      '65173926856-8ki6s3qdvr384tcnrotgu9c62pouh82d.apps.googleusercontent.com';
+  static const _googleAppleClientId =
+      '65173926856-4ij69cucgomh071p0pmhddmik7ase17l.apps.googleusercontent.com';
+
+  static Future<String?> loginWithGoogle({required bool rememberMe}) async {
+    try {
+      UserCredential credential;
+      if (kIsWeb) {
+        credential = await _firebase.signInWithPopup(GoogleAuthProvider());
+      } else if (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.macOS) {
+        _googleInitialization ??= GoogleSignIn.instance.initialize(
+          clientId: defaultTargetPlatform == TargetPlatform.iOS ||
+                  defaultTargetPlatform == TargetPlatform.macOS
+              ? _googleAppleClientId
+              : null,
+          serverClientId: _googleWebClientId,
+        );
+        await _googleInitialization;
+        final googleUser = await GoogleSignIn.instance.authenticate();
+        final idToken = googleUser.authentication.idToken;
+        if (idToken == null) return 'Google did not return an authentication token. Check OAuth client setup.';
+        credential = await _firebase.signInWithCredential(
+          GoogleAuthProvider.credential(idToken: idToken),
+        );
+      } else {
+        return 'Google sign-in is not available on this platform.';
+      }
+
+      final user = credential.user;
+      if (user == null || user.email == null) {
+        await _firebase.signOut();
+        return 'Google did not provide an email address for this account.';
+      }
+      final profileRef = db.collection('admins').doc(user.uid);
+      final profileDoc = await profileRef.get();
+      if (!profileDoc.exists) {
+        final email = user.email!.trim().toLowerCase();
+        final name = (user.displayName?.trim().isNotEmpty ?? false)
+            ? user.displayName!.trim()
+            : email.split('@').first;
+        final baseUsername = email
+            .split('@')
+            .first
+            .replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '')
+            .toLowerCase();
+        final base = baseUsername.length >= 3 ? baseUsername : 'admin';
+        var username = base;
+        var suffix = 1;
+        while (true) {
+          final match = await db.collection('admins')
+              .where('usernameLower', isEqualTo: username)
+              .limit(1)
+              .get();
+          if (match.docs.isEmpty || match.docs.first.id == user.uid) break;
+          username = '$base${suffix++}';
+        }
+        await profileRef.set({
+          'fullName': name,
+          'email': email,
+          'emailLower': email,
+          'username': username,
+          'usernameLower': username,
+          'role': 'Administrator',
+          'createdAt': Timestamp.now(),
+          'authProvider': 'google',
+        });
+      }
+      final savedProfile = await profileRef.get();
+      admin = {...savedProfile.data()!, 'id': savedProfile.id};
+      final preferences = await SharedPreferences.getInstance();
+      if (rememberMe) {
+        await preferences.setString('adminId', user.uid);
+      } else {
+        await preferences.remove('adminId');
+      }
+      return null;
+    } on FirebaseAuthException catch (error) {
+      if (error.code == 'account-exists-with-different-credential') {
+        return 'An account already exists with this email. Log in with that method first.';
+      }
+      if (error.code == 'operation-not-allowed') {
+        return 'Google sign-in is not enabled for this Firebase project.';
+      }
+      if (error.code == 'network-request-failed') {
+        return 'Network error. Check your connection and try again.';
+      }
+      return 'Google sign-in failed. Please try again.';
+    } catch (error) {
+      final message = error.toString().toLowerCase();
+      if (message.contains('cancel')) return 'Google sign-in was canceled.';
+      return 'Google sign-in failed. Check the Google OAuth setup and try again.';
+    }
+  }
 
   static String _hash(String pw, String salt) {
     List<int> h = utf8.encode('$salt$pw');
@@ -606,7 +705,20 @@ class Auth {
         await _firebase.signOut();
         return false;
       }
-      admin = {...d.data()!, 'id': d.id};
+      final profile = Map<String, dynamic>.from(d.data()!);
+      // Firebase only changes an email address after its verification link is
+      // opened. Sync Firestore once the verified address is used to sign in.
+      if (user.email != null && profile['emailLower'] != user.email!.toLowerCase()) {
+        await d.reference.update({
+          'email': user.email,
+          'emailLower': user.email!.toLowerCase(),
+          'pendingEmail': FieldValue.delete(),
+        });
+        profile['email'] = user.email;
+        profile['emailLower'] = user.email!.toLowerCase();
+        profile.remove('pendingEmail');
+      }
+      admin = {...profile, 'id': d.id};
       return true;
     } catch (_) {
       return false;
@@ -665,7 +777,9 @@ class Auth {
       if (!k.contains('@')) {
         final byUsername = await db.collection('admins').where('usernameLower', isEqualTo: k).limit(1).get();
         if (byUsername.docs.isEmpty) return generic;
-        email = (byUsername.docs.first.data()['email'] as String).trim().toLowerCase();
+        final usernameProfile = byUsername.docs.first.data();
+        email = (usernameProfile['pendingEmail'] ?? usernameProfile['email'] as String)
+            .toString().trim().toLowerCase();
         legacyProfile = byUsername;
       }
 
@@ -720,6 +834,84 @@ class Auth {
     final p = await SharedPreferences.getInstance();
     await p.remove('adminId');
     await _firebase.signOut();
+  }
+
+  /// Updates an administrator's Firebase credentials and Firestore profile.
+  /// The current password is required so profile and credential changes are
+  /// protected by Firebase's recent-login requirement.
+  static Future<String?> updateAccount({
+    required String fullName,
+    required String username,
+    required String email,
+    required String currentPassword,
+    String? newPassword,
+  }) async {
+    final user = _firebase.currentUser;
+    final uid = user?.uid;
+    if (user == null || uid == null || user.email == null) {
+      return 'Your session has expired. Please log in again.';
+    }
+    final normalizedEmail = email.trim().toLowerCase();
+    final normalizedUsername = username.trim().toLowerCase();
+    if (!emailRe.hasMatch(normalizedEmail)) return 'Enter a valid email address.';
+    if (normalizedUsername.length < 3) return 'Username must be at least 3 characters.';
+    if (fullName.trim().isEmpty) return 'Enter your name.';
+    if (newPassword != null && newPassword.length < 6) {
+      return 'Choose a stronger password (at least 6 characters).';
+    }
+    try {
+      final matchingEmail = await db.collection('admins')
+          .where('emailLower', isEqualTo: normalizedEmail).limit(1).get();
+      if (matchingEmail.docs.any((doc) => doc.id != uid)) {
+        return 'This email is already used by another administrator.';
+      }
+      final matchingUsername = await db.collection('admins')
+          .where('usernameLower', isEqualTo: normalizedUsername).limit(1).get();
+      if (matchingUsername.docs.any((doc) => doc.id != uid)) {
+        return 'That username is already taken.';
+      }
+
+      await user.reauthenticateWithCredential(EmailAuthProvider.credential(
+        email: user.email!, password: currentPassword,
+      ));
+      final changingEmail = normalizedEmail != user.email!.toLowerCase();
+      if (changingEmail) await user.verifyBeforeUpdateEmail(normalizedEmail);
+      if (newPassword != null && newPassword.isNotEmpty) {
+        await user.updatePassword(newPassword);
+      }
+      final profile = {
+        'fullName': fullName.trim(),
+        'email': changingEmail ? user.email : normalizedEmail,
+        'emailLower': changingEmail ? user.email!.toLowerCase() : normalizedEmail,
+        'pendingEmail': changingEmail ? normalizedEmail : FieldValue.delete(),
+        'username': username.trim(),
+        'usernameLower': normalizedUsername,
+      };
+      await db.collection('admins').doc(uid).update(profile);
+      admin = {...?admin, ...profile, 'id': uid};
+      if (!changingEmail) admin!.remove('pendingEmail');
+      return null;
+    } on FirebaseAuthException catch (error) {
+      switch (error.code) {
+        case 'wrong-password':
+        case 'invalid-credential':
+          return 'The current password is incorrect.';
+        case 'requires-recent-login':
+          return 'Please enter your current password and try again.';
+        case 'email-already-in-use':
+          return 'This email is already used by another administrator.';
+        case 'invalid-email':
+          return 'Enter a valid email address.';
+        case 'weak-password':
+          return 'Choose a stronger password (at least 6 characters).';
+        case 'network-request-failed':
+          return 'Network error. Check your connection and try again.';
+        default:
+          return 'Could not update your account. Please try again.';
+      }
+    } catch (_) {
+      return 'Could not save your profile. Your sign-in details may have updated; please retry or log in again.';
+    }
   }
 
   static String _authError(FirebaseAuthException error, {bool registering = false}) {
@@ -842,6 +1034,17 @@ class _LoginPageState extends State<LoginPage> {
     Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeShell()));
   }
 
+  Future<void> _googleLogin() async {
+    setState(() { busy = true; error = null; });
+    final err = await Auth.loginWithGoogle(rememberMe: rememberMe);
+    if (!mounted) return;
+    if (err != null) {
+      setState(() { busy = false; error = err; });
+      return;
+    }
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeShell()));
+  }
+
   @override
   Widget build(BuildContext context) => _AuthFrame(title: 'Admin Login', children: [
         Form(
@@ -884,6 +1087,17 @@ class _LoginPageState extends State<LoginPage> {
               child: busy
                   ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : const Text('Login'),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: busy ? null : _googleLogin,
+              icon: const Icon(Icons.account_circle_outlined),
+              label: const Text('Continue with Google'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                side: const BorderSide(color: Color(0xFFE3E0EB)),
+                foregroundColor: kText,
+              ),
             ),
             TextButton(
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterPage())),
@@ -992,6 +1206,14 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMixin {
   int index = 0;
+  int _transitionDirection = 1;
+
+  // Page-transition tuning.
+  static const _pageTransition = Duration(milliseconds: 300);
+  // How long to let the drawer slide away before the page swap starts.
+  static const _drawerSettle = Duration(milliseconds: 160);
+  // Horizontal travel of the slide, as a fraction of the page width.
+  static const _slideDistance = .025;
   final List<int> _pageHistory = [];
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final ScrollController _drawerScrollController = ScrollController();
@@ -1045,18 +1267,65 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
         3 => const RenewalPage(),
         4 => const PaymentsTrackerPage(),
         5 => const GrossIncomePage(),
+        7 => AccountManagementPage(onLogout: _logout),
         _ => const ExpensesPage(),
       };
 
+  /// Close the drawer first and swap pages once it has mostly slid away, so the
+  /// drawer animation and the new page's first build don't land in the same frames.
+  void _selectFromDrawer(int i) {
+    Navigator.pop(context);
+    Future.delayed(_drawerSettle, () {
+      if (mounted) _navigateTo(i);
+    });
+  }
+
   void _navigateTo(int nextIndex) {
     if (nextIndex == index) return;
+    _transitionDirection = nextIndex >= index ? 1 : -1;
     _pageHistory.add(index);
     setState(() => index = nextIndex);
   }
 
+  // AnimatedSwitcher already applies switchInCurve / switchOutCurve to `animation`,
+  // so it is used as-is here (the old code curved it a second time, which made the
+  // motion front-loaded and abrupt). The incoming page slides in from the travel
+  // side and the outgoing page slides out the opposite way.
+  Widget _pageTransitionBuilder(Widget child, Animation<double> animation) =>
+      FadeTransition(
+        opacity: animation,
+        child: AnimatedBuilder(
+          animation: animation,
+          child: child,
+          builder: (_, cached) {
+            final leaving = animation.status == AnimationStatus.reverse;
+            final side = leaving ? -_transitionDirection : _transitionDirection;
+            return IgnorePointer(
+              ignoring: leaving,
+              child: FractionalTranslation(
+                translation: Offset(side * _slideDistance * (1 - animation.value), 0),
+                child: cached,
+              ),
+            );
+          },
+        ),
+      );
+
+  Widget _animatedPage() => AnimatedSwitcher(
+        duration: _pageTransition,
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder: _pageTransitionBuilder,
+        child: KeyedSubtree(
+          key: ValueKey(index),
+          child: RepaintBoundary(child: _page()),
+        ),
+      );
+
   void _scrollToSelectedFeature() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_drawerScrollController.hasClients) return;
+      if (index >= _featureKeys.length) return;
       final selectedContext = _featureKeys[index].currentContext;
       if (selectedContext == null) return;
       Scrollable.ensureVisible(
@@ -1075,8 +1344,10 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
     }
     if (_pageHistory.isNotEmpty) {
       final previous = _pageHistory.removeLast();
+      _transitionDirection = -1;
       setState(() => index = previous);
     } else if (index != 0) {
+      _transitionDirection = -1;
       setState(() => index = 0);
     }
     // At the dashboard, keep the app open instead of popping its root route.
@@ -1116,7 +1387,7 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
             ),
           ),
         ),
-        title: Text(items[index].$1),
+        title: Text(index == 7 ? 'Edit Account' : items[index].$1),
         actions: [
           Builder(builder: (drawerContext) => IconButton(
             tooltip: _menuAnimation.isCompleted ? 'Close navigation menu' : 'Open navigation menu',
@@ -1145,7 +1416,7 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.end, children: [
               InkWell(
                 borderRadius: BorderRadius.circular(16),
-                onTap: () { Navigator.pop(context); _navigateTo(0); },
+                onTap: () => _selectFromDrawer(0),
                 child: Container(
                   width: 48,
                   height: 48,
@@ -1185,10 +1456,7 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
                   iconColor: const Color(0xFF9B93C9),
                   textColor: const Color(0xFFD9D4F5),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _navigateTo(i);
-                  },
+                  onTap: () => _selectFromDrawer(i),
                 ),
               ),
             ),
@@ -1198,13 +1466,20 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-            child: ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Logout', style: TextStyle(fontWeight: FontWeight.w700)),
-              iconColor: kPink,
-              textColor: kPink,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              onTap: () => _logout(closeDrawer: true),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              decoration: BoxDecoration(
+                color: index == 7 ? kRed.withValues(alpha: .2) : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ListTile(
+                leading: const Icon(Icons.manage_accounts_outlined),
+                title: const Text('Edit Account', style: TextStyle(fontWeight: FontWeight.w700)),
+                iconColor: index == 7 ? Colors.white : const Color(0xFF9B93C9),
+                textColor: index == 7 ? Colors.white : const Color(0xFFD9D4F5),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                onTap: () => _selectFromDrawer(7),
+              ),
             ),
           ),
         ]),
@@ -1213,39 +1488,181 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
           ? Row(children: [
               NavigationRail(
                 extended: MediaQuery.sizeOf(context).width >= 1200,
-                selectedIndex: index,
+                selectedIndex: index < items.length ? index : null,
                 onDestinationSelected: _navigateTo,
                 destinations: [for (final item in items) NavigationRailDestination(icon: Icon(item.$2), label: Text(item.$1))],
               ),
-              Expanded(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 260),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
-                  transitionBuilder: (child, animation) => FadeTransition(
-                    opacity: animation,
-                    child: SlideTransition(
-                      position: Tween<Offset>(begin: const Offset(0, .012), end: Offset.zero).animate(animation),
-                      child: child,
-                    ),
-                  ),
-                  child: KeyedSubtree(key: ValueKey(index), child: _page()),
-                ),
-              ),
+              Expanded(child: _animatedPage()),
             ])
-          : AnimatedSwitcher(
-              duration: const Duration(milliseconds: 260),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
-              transitionBuilder: (child, animation) => FadeTransition(
-                opacity: animation,
-                child: SlideTransition(
-                  position: Tween<Offset>(begin: const Offset(0, .018), end: Offset.zero).animate(animation),
-                  child: child,
+          : _animatedPage(),
+      ),
+    );
+  }
+}
+
+class AccountManagementPage extends StatefulWidget {
+  final Future<void> Function() onLogout;
+  const AccountManagementPage({super.key, required this.onLogout});
+
+  @override
+  State<AccountManagementPage> createState() => _AccountManagementPageState();
+}
+
+class _AccountManagementPageState extends State<AccountManagementPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _name = TextEditingController();
+  final _username = TextEditingController();
+  final _email = TextEditingController();
+  final _currentPassword = TextEditingController();
+  final _newPassword = TextEditingController();
+  final _confirmPassword = TextEditingController();
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final profile = Auth.admin ?? {};
+    _name.text = profile['fullName']?.toString() ?? '';
+    _username.text = profile['username']?.toString() ?? '';
+    _email.text = profile['pendingEmail']?.toString() ?? profile['email']?.toString() ?? '';
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _username.dispose();
+    _email.dispose();
+    _currentPassword.dispose();
+    _newPassword.dispose();
+    _confirmPassword.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    final requestedEmail = _email.text.trim().toLowerCase();
+    final changingEmail = requestedEmail != (Auth.admin?['email']?.toString().toLowerCase() ?? '');
+    setState(() => _busy = true);
+    final result = await Auth.updateAccount(
+      fullName: _name.text,
+      username: _username.text,
+      email: _email.text,
+      currentPassword: _currentPassword.text,
+      newPassword: _newPassword.text.isEmpty ? null : _newPassword.text,
+    );
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (result != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result)));
+      return;
+    }
+    _currentPassword.clear();
+    _newPassword.clear();
+    _confirmPassword.clear();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(changingEmail
+          ? 'Profile updated. Verify the link sent to your new email to finish changing it.'
+          : 'Account details updated successfully.'),
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 22, 20, 32),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 680),
+          child: Form(
+            key: _formKey,
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: kTape,
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                child: Row(children: [
+                  Container(
+                    width: 54,
+                    height: 54,
+                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: .2), borderRadius: BorderRadius.circular(17)),
+                    child: const Icon(Icons.manage_accounts_rounded, color: Colors.white, size: 30),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Text('Administrator account', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 3),
+                    Text('Update your profile and sign-in details', style: TextStyle(color: Colors.white.withValues(alpha: .86))),
+                  ])),
+                ]),
+              ),
+              const SizedBox(height: 18),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Text('Profile', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 16),
+                    TextFormField(controller: _name, textCapitalization: TextCapitalization.words,
+                      decoration: const InputDecoration(labelText: 'Full name', prefixIcon: Icon(Icons.person_outline)), validator: reqRule),
+                    const SizedBox(height: 12),
+                    TextFormField(controller: _username, textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(labelText: 'Username', prefixIcon: Icon(Icons.alternate_email)),
+                      validator: (value) => (value == null || value.trim().length < 3) ? 'Use at least 3 characters' : null),
+                    const SizedBox(height: 12),
+                    TextFormField(controller: _email, keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(labelText: 'Email address', prefixIcon: Icon(Icons.email_outlined)), validator: emailRule),
+                  ]),
                 ),
               ),
-              child: KeyedSubtree(key: ValueKey(index), child: _page()),
-            ),
+              const SizedBox(height: 14),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Text('Security', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 4),
+                    const Text('Confirm your current password to save account changes.', style: TextStyle(color: kMuted)),
+                    const SizedBox(height: 14),
+                    TextFormField(controller: _currentPassword, obscureText: true, autofillHints: const [AutofillHints.password],
+                      decoration: const InputDecoration(labelText: 'Current password', prefixIcon: Icon(Icons.lock_outline)),
+                      validator: (value) => (value == null || value.isEmpty) ? 'Enter your current password' : null),
+                    const SizedBox(height: 12),
+                    TextFormField(controller: _newPassword, obscureText: true,
+                      decoration: const InputDecoration(labelText: 'New password (optional)', prefixIcon: Icon(Icons.lock_reset_outlined), helperText: 'Leave blank to keep your current password'),
+                      validator: (value) => (value != null && value.isNotEmpty && value.length < 6) ? 'Use at least 6 characters' : null),
+                    const SizedBox(height: 12),
+                    TextFormField(controller: _confirmPassword, obscureText: true,
+                      decoration: const InputDecoration(labelText: 'Confirm new password', prefixIcon: Icon(Icons.verified_user_outlined)),
+                      validator: (value) => _newPassword.text.isEmpty
+                          ? ((value?.isNotEmpty ?? false) ? 'Enter a new password above first' : null)
+                          : value != _newPassword.text ? 'Passwords do not match' : null),
+                  ]),
+                ),
+              ),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: _busy ? null : _save,
+                icon: _busy
+                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.save_outlined),
+                label: Text(_busy ? 'Saving…' : 'Save account changes'),
+                style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 15)),
+              ),
+              const SizedBox(height: 20),
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.logout_rounded, color: kError),
+                  title: const Text('Log out', style: TextStyle(color: kError, fontWeight: FontWeight.w800)),
+                  subtitle: const Text('Sign out of this administrator account'),
+                  trailing: const Icon(Icons.chevron_right_rounded, color: kMuted),
+                  onTap: _busy ? null : widget.onLogout,
+                ),
+              ),
+            ]),
+          ),
+        ),
       ),
     );
   }
@@ -2260,7 +2677,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'ActiveSync',
+      title: 'FitCore',
       debugShowCheckedModeBanner: false,
       theme: appTheme(),
       home: FutureBuilder<bool>(

@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "elec3proj" "\0"
+            VALUE "FileDescription", "FitCore" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "elec3proj" "\0"
+            VALUE "InternalName", "FitCore" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.example. All rights reserved." "\0"
             VALUE "OriginalFilename", "elec3proj.exe" "\0"
-            VALUE "ProductName", "elec3proj" "\0"
+            VALUE "ProductName", "FitCore" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
