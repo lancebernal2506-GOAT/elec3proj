@@ -318,10 +318,12 @@ class Auth {
     final e = email.trim().toLowerCase();
     if (!emailRe.hasMatch(e)) return 'Invalid email address.';
     try {
+      final b = await db.collection('admins').where('emailLower', isEqualTo: e).limit(1).get();
+      if (b.docs.isNotEmpty) {
+        return 'This email is already registered. Use a different email or log in.';
+      }
       final a = await db.collection('admins').where('usernameLower', isEqualTo: u).limit(1).get();
       if (a.docs.isNotEmpty) return 'Username is already taken.';
-      final b = await db.collection('admins').where('emailLower', isEqualTo: e).limit(1).get();
-      if (b.docs.isNotEmpty) return 'Email is already registered.';
       final salt = _salt();
       await db.collection('admins').add({
         'fullName': name.trim(),
