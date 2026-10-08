@@ -17,54 +17,68 @@ import 'firebase_options.dart';
 // ═════════ core ═════════
 
 // ───────── Theme ─────────
-const kRed = Color(0xFF8B8CFF); // violet blue
-const kDarkRed = Color(0xFF292B58);
-const kBlack = Color(0xFF0D111C);
-const kCard = Color(0xFF191F2E);
-const kMuted = Color(0xFFA6B0C2);
+const kRed = Color(0xFF6857D9); // gallery violet
+const kDarkRed = Color(0xFF49359B);
+const kBlack = Color(0xFFF6F5FA);
+const kCard = Color(0xFFFFFFFF);
+const kMuted = Color(0xFF74758A);
+const kError = Color(0xFFB3261E);
 
 ThemeData appTheme() => ThemeData(
-      brightness: Brightness.dark,
+      brightness: Brightness.light,
       useMaterial3: true,
       scaffoldBackgroundColor: kBlack,
-      colorScheme: const ColorScheme.dark(
-          primary: kRed, secondary: Color(0xFF4CE0C1), surface: kCard,
-          onSurface: Color(0xFFE8EEF7)),
-      fontFamily: 'Arial',
+      colorScheme: const ColorScheme.light(
+        primary: kRed,
+        secondary: Color(0xFFD886A7),
+        surface: kCard,
+        onSurface: Color(0xFF25243A),
+        error: Color(0xFFB3261E),
+      ),
+      fontFamily: 'Manrope',
+      textTheme: ThemeData.light().textTheme.apply(
+        fontFamily: 'Manrope',
+        bodyColor: const Color(0xFF25243A),
+        displayColor: const Color(0xFF25243A),
+      ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: kBlack,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white,
+        foregroundColor: Color(0xFF25243A),
         elevation: 0,
         centerTitle: false,
         scrolledUnderElevation: 0,
-        titleTextStyle: TextStyle(color: Color(0xFFE8EEF7), fontSize: 19, fontWeight: FontWeight.w700),
+        titleTextStyle: TextStyle(fontFamily: 'Manrope', color: Color(0xFF25243A), fontSize: 19, fontWeight: FontWeight.w700),
       ),
       cardTheme: CardThemeData(
         color: kCard,
-        elevation: 0,
+        elevation: 1,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
-          side: const BorderSide(color: Color(0xFF2A3348)),
+          side: const BorderSide(color: Color(0xFFE9E7F0)),
         ),
       ),
-      drawerTheme: const DrawerThemeData(backgroundColor: kBlack),
+      drawerTheme: const DrawerThemeData(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        scrimColor: Color(0x550D1020),
+      ),
       inputDecorationTheme: const InputDecorationTheme(
         border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(14))),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(14)),
-          borderSide: BorderSide(color: Color(0xFF35415A)),
+          borderSide: BorderSide(color: Color(0xFFE1DFEA)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(14)),
-          borderSide: BorderSide(color: kRed, width: 1.5),
+          borderSide: BorderSide(color: kRed, width: 1.6),
         ),
         filled: true,
-        fillColor: kCard,
+        fillColor: Color(0xFFFBFAFD),
         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: kCard,
+        backgroundColor: Colors.white,
         indicatorColor: kRed.withValues(alpha: .18),
         labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
           color: states.contains(WidgetState.selected) ? kRed : kMuted,
@@ -73,7 +87,7 @@ ThemeData appTheme() => ThemeData(
         )),
       ),
       navigationRailTheme: const NavigationRailThemeData(
-        backgroundColor: kBlack,
+        backgroundColor: Colors.white,
         selectedIconTheme: IconThemeData(color: kRed),
         unselectedIconTheme: IconThemeData(color: kMuted),
         selectedLabelTextStyle: TextStyle(color: kRed, fontWeight: FontWeight.w600),
@@ -81,13 +95,13 @@ ThemeData appTheme() => ThemeData(
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
             backgroundColor: kRed,
-            foregroundColor: const Color(0xFF06201C),
+            foregroundColor: Colors.white,
             minimumSize: const Size.fromHeight(50),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            elevation: 0),
+            elevation: 1),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: const Color(0xFF24344A),
+        backgroundColor: const Color(0xFF302C43),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
@@ -164,9 +178,9 @@ class EmptyState extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Icons.inbox, size: 56, color: Colors.white38),
+            Icon(Icons.inbox, size: 56, color: kMuted.withValues(alpha: .55)),
             const SizedBox(height: 8),
-            Text(text, style: const TextStyle(color: Colors.white54)),
+            Text(text, style: const TextStyle(color: kMuted)),
           ]),
         ),
       );
@@ -181,7 +195,7 @@ class StatusChip extends StatelessWidget {
       'Active' => Colors.green,
       'Expiring Soon' => Colors.orange,
       'Frozen' => Colors.lightBlue,
-      _ => kRed,
+      _ => kError,
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
@@ -478,7 +492,7 @@ class _AuthFrame extends StatelessWidget {
                 const Text('ActiveSync',
                     style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
-                Text(title, style: const TextStyle(color: Colors.white70)),
+                Text(title, style: const TextStyle(color: kMuted)),
                 const SizedBox(height: 24),
                 ...children,
               ]),
@@ -548,7 +562,7 @@ class _LoginPageState extends State<LoginPage> {
             if (error != null)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
-                child: Text(error!, style: const TextStyle(color: kRed)),
+                child: Text(error!, style: const TextStyle(color: kError)),
               ),
             const SizedBox(height: 20),
             ElevatedButton(
@@ -600,6 +614,7 @@ class _RegisterPageState extends State<RegisterPage> {
     } else {
       await Auth.logout();
     }
+    if (!mounted) return;
     snack(context, 'Account created. Please log in.');
     Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginPage()), (_) => false);
   }
@@ -639,7 +654,7 @@ class _RegisterPageState extends State<RegisterPage> {
             if (error != null)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
-                child: Text(error!, style: const TextStyle(color: kRed)),
+                child: Text(error!, style: const TextStyle(color: kError)),
               ),
             const SizedBox(height: 20),
             ElevatedButton(
@@ -661,27 +676,38 @@ class HomeShell extends StatefulWidget {
   State<HomeShell> createState() => _HomeShellState();
 }
 
-class _HomeShellState extends State<HomeShell> {
+class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMixin {
   int index = 0;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _activitySub;
   bool _activityReady = false;
+  late final AnimationController _menuAnimation;
 
   @override
   void initState() {
     super.initState();
+    _menuAnimation = AnimationController(vsync: this, duration: const Duration(milliseconds: 220));
     _activitySub = db.collection('activity').orderBy('createdAt', descending: true).limit(1).snapshots().listen((snapshot) {
-      if (!_activityReady) { _activityReady = true; return; }
+      if (!_activityReady) {
+        _activityReady = true;
+        return;
+      }
       for (final change in snapshot.docChanges) {
         if (change.type != DocumentChangeType.added || change.doc.data()?['actorId'] == Auth.admin?['id']) continue;
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('${change.doc.data()?['actorName']}: ${change.doc.data()?['action']} ${change.doc.data()?['subject']}'),
-        ));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('${change.doc.data()?['actorName']}: ${change.doc.data()?['action']} ${change.doc.data()?['subject']}'),
+          ));
+        }
       }
     });
   }
 
   @override
-  void dispose() { _activitySub?.cancel(); super.dispose(); }
+  void dispose() {
+    _activitySub?.cancel();
+    _menuAnimation.dispose();
+    super.dispose();
+  }
 
   static const items = [
     ('Dashboard', Icons.dashboard),
@@ -727,27 +753,34 @@ class _HomeShellState extends State<HomeShell> {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [Color(0xFF34376D), Color(0xFF174C52)]),
+                gradient: const LinearGradient(colors: [Color(0xFFE8E5FF), Color(0xFFFCEAF1)]),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.fitness_center_rounded, color: Color(0xFF4CE0C1), size: 21),
+              child: const Icon(Icons.fitness_center_rounded, color: kRed, size: 21),
             ),
           ),
         ),
         title: Text(items[index].$1),
         actions: [
           Builder(builder: (drawerContext) => IconButton(
-            tooltip: 'Open navigation menu',
-            icon: const Icon(Icons.menu_rounded),
+            tooltip: _menuAnimation.isCompleted ? 'Close navigation menu' : 'Open navigation menu',
+            icon: AnimatedIcon(icon: AnimatedIcons.menu_close, progress: _menuAnimation),
             onPressed: () => Scaffold.of(drawerContext).openDrawer(),
           )),
         ],
       ),
+      onDrawerChanged: (isOpen) {
+        if (isOpen) {
+          _menuAnimation.forward();
+        } else {
+          _menuAnimation.reverse();
+        }
+      },
       drawer: Drawer(
         child: ListView(children: [
           DrawerHeader(
             decoration: const BoxDecoration(
-              gradient: LinearGradient(colors: [Color(0xFF292B58), Color(0xFF174C52)]),
+              gradient: LinearGradient(colors: [Color(0xFF6857D9), Color(0xFFB46D96)]),
             ),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.end, children: [
               InkWell(
@@ -755,20 +788,22 @@ class _HomeShellState extends State<HomeShell> {
                 onTap: () { Navigator.pop(context); setState(() => index = 0); },
                 child: const Padding(
                   padding: EdgeInsets.all(4),
-                  child: Icon(Icons.fitness_center_rounded, size: 34, color: Color(0xFF4CE0C1)),
+                  child: Icon(Icons.fitness_center_rounded, size: 34, color: Colors.white),
                 ),
               ),
               const SizedBox(height: 8),
-              Text(Auth.admin?['fullName'] ?? '', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const Text('Administrator'),
+              Text(Auth.admin?['fullName'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text('Administrator', style: TextStyle(color: Color(0xFFF3EFFF))),
             ]),
           ),
           for (var i = 0; i < items.length; i++)
             ListTile(
-              leading: Icon(items[i].$2, color: i == index ? kRed : Colors.white70),
+              leading: Icon(items[i].$2, color: i == index ? kRed : kMuted),
               title: Text(items[i].$1),
               selected: i == index,
               selectedColor: kRed,
+              selectedTileColor: kRed.withValues(alpha: .09),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               onTap: () {
                 Navigator.pop(context);
                 setState(() => index = i);
@@ -863,7 +898,7 @@ class DashboardPage extends StatelessWidget {
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [Color(0xFF292B58), Color(0xFF174C52)]),
+                          gradient: const LinearGradient(colors: [Color(0xFFEAE7FF), Color(0xFFFCEAF1)]),
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(color: kRed.withValues(alpha: .22)),
                         ),
@@ -871,8 +906,8 @@ class DashboardPage extends StatelessWidget {
                           Container(
                             width: 42,
                             height: 42,
-                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: .08), borderRadius: BorderRadius.circular(13)),
-                            child: const Icon(Icons.bolt_rounded, color: Color(0xFF4CE0C1), size: 24),
+                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: .72), borderRadius: BorderRadius.circular(13)),
+                            child: const Icon(Icons.bolt_rounded, color: kRed, size: 24),
                           ),
                           const SizedBox(width: 12),
                           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -886,7 +921,7 @@ class DashboardPage extends StatelessWidget {
                         ]),
                       ),
                       const SizedBox(height: 20),
-                      const Text('Business overview', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                      const Text('The gym at one glance', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                       const SizedBox(height: 10),
                       for (final card in cards) Padding(
                         padding: const EdgeInsets.only(bottom: 9),
@@ -916,7 +951,7 @@ class _Stat extends StatelessWidget {
         decoration: BoxDecoration(
           color: kCard,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF303A50)),
+          border: Border.all(color: const Color(0xFFE5E2ED)),
         ),
         child: Row(children: [
           Container(
@@ -1020,7 +1055,7 @@ class _AddMemberPageState extends State<AddMemberPage> {
               alignment: Alignment.centerLeft,
               child: Text(
                 'Expires: ${fmtDate(DateTime.now().add(Duration(days: plans[type]!.days)))}',
-                style: const TextStyle(color: Colors.white60),
+                style: const TextStyle(color: kMuted),
               ),
             ),
             const SizedBox(height: 20),
@@ -1258,7 +1293,7 @@ class RenewalPage extends StatelessWidget {
                     Text('${m['contact']}  •  ${m['email']}'),
                     Text('Type: ${m['membershipType']}'),
                     Text('Expires: ${fmtDate(exp)}  (${daysLeft(exp)} days remaining)'),
-                    Text('Added: ${fmtDateTime(dt(m['createdAt']))}', style: const TextStyle(color: Colors.white60)),
+                    Text('Added: ${fmtDateTime(dt(m['createdAt']))}', style: const TextStyle(color: kMuted)),
                     const SizedBox(height: 8),
                     Align(
                       alignment: Alignment.centerRight,
@@ -1622,7 +1657,7 @@ class _GrossIncomePageState extends State<GrossIncomePage> {
   Widget _row(String l, String v, {Color? color, bool big = false}) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text(l, style: const TextStyle(color: Colors.white70)),
+          Text(l, style: const TextStyle(color: kMuted)),
           Flexible(child: Text(v, textAlign: TextAlign.right, style: TextStyle(color: color, fontSize: big ? 22 : 16, fontWeight: FontWeight.bold))),
         ]),
       );
@@ -1753,7 +1788,7 @@ class _StartupScreen extends StatelessWidget {
             const SizedBox(height: 16),
             const CircularProgressIndicator(),
             const SizedBox(height: 16),
-            Text(message, style: const TextStyle(color: Colors.white70)),
+            Text(message, style: const TextStyle(color: kMuted)),
           ]),
         ),
       );
