@@ -294,8 +294,7 @@ class SectionTitle extends StatelessWidget {
 
 class _Initials extends StatelessWidget {
   final String name;
-  final double size;
-  const _Initials(this.name, {this.size = 44});
+  const _Initials(this.name);
   @override
   Widget build(BuildContext context) {
     final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
@@ -303,14 +302,14 @@ class _Initials extends StatelessWidget {
         ? '?'
         : (parts.length == 1 ? parts.first[0] : parts.first[0] + parts.last[0]).toUpperCase();
     return Container(
-      width: size,
-      height: size,
+      width: 44,
+      height: 44,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [kRed, kDarkRed]),
-        borderRadius: BorderRadius.circular(size * .3),
+        borderRadius: BorderRadius.circular(13),
       ),
-      child: Text(text, style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: size * .36)),
+      child: Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
     );
   }
 }
@@ -993,6 +992,10 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMixin {
   int index = 0;
+  final List<int> _pageHistory = [];
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final ScrollController _drawerScrollController = ScrollController();
+  late final List<GlobalKey> _featureKeys = List.generate(items.length, (_) => GlobalKey());
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _activitySub;
   bool _activityReady = false;
   late final AnimationController _menuAnimation;
@@ -1020,6 +1023,7 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
   @override
   void dispose() {
     _activitySub?.cancel();
+    _drawerScrollController.dispose();
     _menuAnimation.dispose();
     super.dispose();
   }
@@ -1044,6 +1048,40 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
         _ => const ExpensesPage(),
       };
 
+  void _navigateTo(int nextIndex) {
+    if (nextIndex == index) return;
+    _pageHistory.add(index);
+    setState(() => index = nextIndex);
+  }
+
+  void _scrollToSelectedFeature() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_drawerScrollController.hasClients) return;
+      final selectedContext = _featureKeys[index].currentContext;
+      if (selectedContext == null) return;
+      Scrollable.ensureVisible(
+        selectedContext,
+        alignment: .35,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeInOutCubic,
+      );
+    });
+  }
+
+  void _handleBack() {
+    if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+      Navigator.of(context).pop();
+      return;
+    }
+    if (_pageHistory.isNotEmpty) {
+      final previous = _pageHistory.removeLast();
+      setState(() => index = previous);
+    } else if (index != 0) {
+      setState(() => index = 0);
+    }
+    // At the dashboard, keep the app open instead of popping its root route.
+  }
+
   Future<void> _logout({bool closeDrawer = false}) async {
     if (closeDrawer) Navigator.pop(context);
     if (!await confirm(context, 'Logout', 'Do you want to log out?')) return;
@@ -1056,14 +1094,20 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     final desktop = MediaQuery.sizeOf(context).width >= 900;
-    return Scaffold(
+    return PopScope<Object?>(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _handleBack();
+      },
+      child: Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
         leadingWidth: 64,
         leading: Padding(
           padding: const EdgeInsets.only(left: 8),
           child: IconButton(
             tooltip: 'Go to dashboard',
-            onPressed: () => setState(() => index = 0),
+            onPressed: () => _navigateTo(0),
             icon: Container(
               width: 38,
               height: 38,
@@ -1085,12 +1129,13 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
       onDrawerChanged: (isOpen) {
         if (isOpen) {
           _menuAnimation.forward();
+          _scrollToSelectedFeature();
         } else {
           _menuAnimation.reverse();
         }
       },
       drawer: Drawer(
-        child: ListView(padding: EdgeInsets.zero, children: [
+        child: ListView(controller: _drawerScrollController, padding: EdgeInsets.zero, children: [
           DrawerHeader(
             margin: EdgeInsets.zero,
             decoration: const BoxDecoration(
@@ -1100,7 +1145,7 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.end, children: [
               InkWell(
                 borderRadius: BorderRadius.circular(16),
-                onTap: () { Navigator.pop(context); setState(() => index = 0); },
+                onTap: () { Navigator.pop(context); _navigateTo(0); },
                 child: Container(
                   width: 48,
                   height: 48,
@@ -1122,19 +1167,29 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
           for (var i = 0; i < items.length; i++)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-              child: ListTile(
-                leading: Icon(items[i].$2),
-                title: Text(items[i].$1, style: const TextStyle(fontWeight: FontWeight.w700)),
-                selected: i == index,
-                selectedColor: Colors.white,
-                selectedTileColor: kRed,
-                iconColor: const Color(0xFF9B93C9),
-                textColor: const Color(0xFFD9D4F5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                onTap: () {
-                  Navigator.pop(context);
-                  setState(() => index = i);
-                },
+              child: AnimatedContainer(
+                key: _featureKeys[i],
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                decoration: BoxDecoration(
+                  color: i == index ? kRed.withValues(alpha: .2) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: i == index ? kRed.withValues(alpha: .48) : Colors.transparent),
+                ),
+                child: ListTile(
+                  leading: Icon(items[i].$2),
+                  title: Text(items[i].$1, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  selected: i == index,
+                  selectedColor: Colors.white,
+                  selectedTileColor: Colors.transparent,
+                  iconColor: const Color(0xFF9B93C9),
+                  textColor: const Color(0xFFD9D4F5),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _navigateTo(i);
+                  },
+                ),
               ),
             ),
           const Padding(
@@ -1159,7 +1214,7 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
               NavigationRail(
                 extended: MediaQuery.sizeOf(context).width >= 1200,
                 selectedIndex: index,
-                onDestinationSelected: (value) => setState(() => index = value),
+                onDestinationSelected: _navigateTo,
                 destinations: [for (final item in items) NavigationRailDestination(icon: Icon(item.$2), label: Text(item.$1))],
               ),
               Expanded(
@@ -1191,6 +1246,7 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
               ),
               child: KeyedSubtree(key: ValueKey(index), child: _page()),
             ),
+      ),
     );
   }
 }
@@ -2223,7 +2279,7 @@ class _MyAppState extends State<MyApp> {
 
 class _StartupScreen extends StatelessWidget {
   final String message;
-  const _StartupScreen({this.message = 'Loading ActiveSync…'});
+  const _StartupScreen({this.message = 'Loading FitCore…'});
 
   @override
   Widget build(BuildContext context) => Scaffold(
