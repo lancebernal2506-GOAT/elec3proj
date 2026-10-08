@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crypto/crypto.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -281,14 +282,10 @@ Future<void> renewMember(String docId, Map<String, dynamic> m, String type) asyn
   await recordChange('Renewed membership', subject: m['fullName']);
 }
 
-// ───────── Auth (admin accounts in Firestore, salted+iterated SHA-256) ─────────
+// ───────── Firebase Authentication + admin profile ─────────
 class Auth {
   static Map<String, dynamic>? admin;
-
-  static String _salt() {
-    final r = Random.secure();
-    return base64Url.encode(List.generate(16, (_) => r.nextInt(256)));
-  }
+  static final FirebaseAuth _firebase = FirebaseAuth.instance;
 
   static String _hash(String pw, String salt) {
     List<int> h = utf8.encode('$salt$pw');
@@ -302,9 +299,21 @@ class Auth {
     try {
       final p = await SharedPreferences.getInstance();
       final id = p.getString('adminId');
-      if (id == null) return false;
+      final user = _firebase.currentUser;
+      if (id == null) {
+        if (user != null) await _firebase.signOut();
+        return false;
+      }
+      if (user == null || user.uid != id) {
+        await p.remove('adminId');
+        return false;
+      }
       final d = await db.collection('admins').doc(id).get();
-      if (!d.exists) return false;
+      if (!d.exists) {
+        await p.remove('adminId');
+        await _firebase.signOut();
+        return false;
+      }
       admin = {...d.data()!, 'id': d.id};
       return true;
     } catch (_) {
@@ -318,25 +327,38 @@ class Auth {
     final e = email.trim().toLowerCase();
     if (!emailRe.hasMatch(e)) return 'Invalid email address.';
     try {
-      final b = await db.collection('admins').where('emailLower', isEqualTo: e).limit(1).get();
-      if (b.docs.isNotEmpty) {
+      final existing = await db.collection('admins').where('emailLower', isEqualTo: e).limit(1).get();
+      if (existing.docs.isNotEmpty) {
         return 'This email is already registered. Use a different email or log in.';
       }
       final a = await db.collection('admins').where('usernameLower', isEqualTo: u).limit(1).get();
       if (a.docs.isNotEmpty) return 'Username is already taken.';
-      final salt = _salt();
-      await db.collection('admins').add({
+
+      UserCredential credential;
+      try {
+        credential = await _firebase.createUserWithEmailAndPassword(email: e, password: pw);
+      } on FirebaseAuthException catch (error) {
+        return _authError(error, registering: true);
+      }
+      final user = credential.user;
+      if (user == null) return 'Could not create the account. Please try again.';
+      try {
+        await db.collection('admins').doc(user.uid).set({
         'fullName': name.trim(),
-        'email': email.trim(),
+        'email': e,
         'emailLower': e,
         'username': username.trim(),
         'usernameLower': u,
-        'salt': salt,
-        'passwordHash': _hash(pw, salt),
         'role': 'Administrator',
         'createdAt': Timestamp.now(),
       });
+      } catch (_) {
+        await user.delete();
+        return 'Your account was created, but its profile could not be saved. Please try again.';
+      }
       return null;
+    } on FirebaseAuthException catch (error) {
+      return _authError(error, registering: true);
     } catch (_) {
       return 'Something went wrong. Please try again.';
     }
@@ -346,18 +368,52 @@ class Auth {
     const generic = 'Invalid username/email or password.';
     final k = id.trim().toLowerCase();
     try {
-      var q = await db.collection('admins').where('usernameLower', isEqualTo: k).limit(1).get();
-      if (q.docs.isEmpty) {
-        q = await db.collection('admins').where('emailLower', isEqualTo: k).limit(1).get();
+      var email = k;
+      var legacyProfile = await db.collection('admins').where('emailLower', isEqualTo: k).limit(1).get();
+      if (!k.contains('@')) {
+        final byUsername = await db.collection('admins').where('usernameLower', isEqualTo: k).limit(1).get();
+        if (byUsername.docs.isEmpty) return generic;
+        email = (byUsername.docs.first.data()['email'] as String).trim().toLowerCase();
+        legacyProfile = byUsername;
       }
-      if (q.docs.isEmpty) return generic;
-      final d = q.docs.first;
-      final data = d.data();
-      if (_hash(pw, data['salt']) != data['passwordHash']) return generic;
-      admin = {...data, 'id': d.id};
+
+      UserCredential credential;
+      try {
+        credential = await _firebase.signInWithEmailAndPassword(email: email, password: pw);
+      } on FirebaseAuthException catch (error) {
+        // Existing installations used a local hash. Upgrade a matching legacy account
+        // into Firebase Authentication on its first successful login.
+        final profile = legacyProfile.docs.isNotEmpty ? legacyProfile.docs.first : null;
+        final old = profile?.data();
+        if (old == null || old['passwordHash'] == null || old['salt'] == null ||
+            _hash(pw, old['salt'] as String) != old['passwordHash']) {
+          return _authError(error);
+        }
+        try {
+          credential = await _firebase.createUserWithEmailAndPassword(email: email, password: pw);
+          final upgraded = Map<String, dynamic>.from(old)
+            ..remove('passwordHash')
+            ..remove('salt')
+            ..['email'] = email
+            ..['emailLower'] = email;
+          await db.collection('admins').doc(credential.user!.uid).set(upgraded);
+          await profile!.reference.delete();
+        } on FirebaseAuthException catch (migrationError) {
+          return _authError(migrationError);
+        }
+      }
+
+      final user = credential.user;
+      if (user == null) return generic;
+      final d = await db.collection('admins').doc(user.uid).get();
+      if (!d.exists) {
+        await _firebase.signOut();
+        return 'This account does not have an administrator profile.';
+      }
+      admin = {...d.data()!, 'id': d.id};
       final p = await SharedPreferences.getInstance();
       if (rememberMe) {
-        await p.setString('adminId', d.id);
+        await p.setString('adminId', user.uid);
       } else {
         await p.remove('adminId');
       }
@@ -371,6 +427,36 @@ class Auth {
     admin = null;
     final p = await SharedPreferences.getInstance();
     await p.remove('adminId');
+    await _firebase.signOut();
+  }
+
+  static String _authError(FirebaseAuthException error, {bool registering = false}) {
+    switch (error.code) {
+      case 'email-already-in-use':
+        return registering
+            ? 'This email is already registered. Use a different email or log in.'
+            : 'Invalid username/email or password.';
+      case 'invalid-email':
+        return 'Enter a valid email address.';
+      case 'weak-password':
+        return 'Choose a stronger password (at least 6 characters).';
+      case 'user-disabled':
+        return 'This account has been disabled. Contact an administrator.';
+      case 'user-not-found':
+      case 'wrong-password':
+      case 'invalid-credential':
+        return 'Invalid username/email or password.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please wait and try again.';
+      case 'operation-not-allowed':
+        return 'Email/password sign-in is not enabled in Firebase.';
+      case 'network-request-failed':
+        return 'Network error. Check your connection and try again.';
+      default:
+        return registering
+            ? 'Could not create your account. Please try again.'
+            : 'Could not sign in. Please try again.';
+    }
   }
 }
 
@@ -511,6 +597,8 @@ class _RegisterPageState extends State<RegisterPage> {
         Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const HomeShell()), (_) => false);
         return;
       }
+    } else {
+      await Auth.logout();
     }
     snack(context, 'Account created. Please log in.');
     Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginPage()), (_) => false);
