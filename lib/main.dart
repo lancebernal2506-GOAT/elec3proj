@@ -16,27 +16,78 @@ import 'firebase_options.dart';
 // ═════════ core ═════════
 
 // ───────── Theme ─────────
-const kRed = Color(0xFFD71920);
-const kDarkRed = Color(0xFF8E0E13);
-const kBlack = Color(0xFF0B0B0B);
-const kCard = Color(0xFF1A1A1A);
+const kRed = Color(0xFF38D6B0); // primary teal
+const kDarkRed = Color(0xFF153B3A);
+const kBlack = Color(0xFF0B1220);
+const kCard = Color(0xFF151F30);
+const kMuted = Color(0xFF9AAAC0);
 
 ThemeData appTheme() => ThemeData(
       brightness: Brightness.dark,
       useMaterial3: true,
       scaffoldBackgroundColor: kBlack,
       colorScheme: const ColorScheme.dark(
-          primary: kRed, secondary: kDarkRed, surface: kCard),
+          primary: kRed, secondary: Color(0xFFA3E635), surface: kCard,
+          onSurface: Color(0xFFE8EEF7)),
+      fontFamily: 'Roboto',
       appBarTheme: const AppBarTheme(
-          backgroundColor: kDarkRed, foregroundColor: Colors.white),
+        backgroundColor: kBlack,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: false,
+        scrolledUnderElevation: 0,
+      ),
+      cardTheme: CardThemeData(
+        color: kCard,
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: const BorderSide(color: Color(0xFF263449)),
+        ),
+      ),
       drawerTheme: const DrawerThemeData(backgroundColor: kBlack),
       inputDecorationTheme: const InputDecorationTheme(
-          border: OutlineInputBorder(), filled: true, fillColor: kCard),
+        border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(14))),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(14)),
+          borderSide: BorderSide(color: Color(0xFF33445D)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(14)),
+          borderSide: BorderSide(color: kRed, width: 1.5),
+        ),
+        filled: true,
+        fillColor: kCard,
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: kCard,
+        indicatorColor: kRed.withValues(alpha: .18),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
+          color: states.contains(WidgetState.selected) ? kRed : kMuted,
+          fontSize: 11,
+          fontWeight: states.contains(WidgetState.selected) ? FontWeight.w600 : FontWeight.w400,
+        )),
+      ),
+      navigationRailTheme: const NavigationRailThemeData(
+        backgroundColor: kBlack,
+        selectedIconTheme: IconThemeData(color: kRed),
+        unselectedIconTheme: IconThemeData(color: kMuted),
+        selectedLabelTextStyle: TextStyle(color: kRed, fontWeight: FontWeight.w600),
+      ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
             backgroundColor: kRed,
-            foregroundColor: Colors.white,
-            minimumSize: const Size.fromHeight(48)),
+            foregroundColor: const Color(0xFF06201C),
+            minimumSize: const Size.fromHeight(50),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            elevation: 0),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: const Color(0xFF24344A),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
     );
 
@@ -517,7 +568,7 @@ class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
   @override
   State<HomeShell> createState() => _HomeShellState();
-} 
+}
 
 class _HomeShellState extends State<HomeShell> {
   int index = 0;
@@ -615,13 +666,38 @@ class _HomeShellState extends State<HomeShell> {
                 destinations: [for (final item in items) NavigationRailDestination(icon: Icon(item.$2), label: Text(item.$1))],
               ),
               const VerticalDivider(width: 1),
-              Expanded(child: _page()),
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  switchInCurve: Curves.easeOutCubic,
+                  transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
+                  child: KeyedSubtree(key: ValueKey(index), child: _page()),
+                ),
+              ),
             ])
-          : _page(),
+          : AnimatedSwitcher(
+              duration: const Duration(milliseconds: 240),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(begin: const Offset(0, .018), end: Offset.zero).animate(animation),
+                  child: child,
+                ),
+              ),
+              child: KeyedSubtree(key: ValueKey(index), child: _page()),
+            ),
       bottomNavigationBar: !desktop ? NavigationBar(
-        selectedIndex: index,
-        onDestinationSelected: (value) => setState(() => index = value),
-        destinations: [for (final item in items.take(5)) NavigationDestination(icon: Icon(item.$2), label: item.$1)],
+        selectedIndex: const [0, 1, 2, 3, 4].indexOf(index).clamp(0, 4).toInt(),
+        onDestinationSelected: (value) => setState(() => index = const [0, 1, 2, 3, 4][value]),
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Home'),
+          NavigationDestination(icon: Icon(Icons.person_add_alt_1_outlined), selectedIcon: Icon(Icons.person_add_alt_1), label: 'Add'),
+          NavigationDestination(icon: Icon(Icons.groups_outlined), selectedIcon: Icon(Icons.groups), label: 'Members'),
+          NavigationDestination(icon: Icon(Icons.autorenew_outlined), selectedIcon: Icon(Icons.autorenew), label: 'Renewal'),
+          NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'Pay'),
+        ],
       ) : null,
     );
   }
@@ -657,24 +733,67 @@ class DashboardPage extends StatelessWidget {
             _Stat('Expired Memberships', '$expired', Icons.event_busy),
           ];
 
-          return ListView(padding: const EdgeInsets.all(16), children: [
-            Text('Welcome, ${Auth.admin?['fullName'] ?? ''}',
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            const Text('Administrator', style: TextStyle(color: kRed)),
-            const SizedBox(height: 16),
-            LayoutBuilder(builder: (_, c) {
-              final cols = c.maxWidth > 700 ? 3 : 2;
-              return GridView.count(
-                crossAxisCount: cols,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.4,
-                children: cards,
-              );
-            }),
-          ]);
+          return LayoutBuilder(builder: (context, constraints) {
+            final wide = constraints.maxWidth >= 900;
+            final pageWidth = wide ? 1240.0 : double.infinity;
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+              children: [
+                Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: pageWidth),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF153B3A), Color(0xFF17283C)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(color: kRed.withValues(alpha: .24)),
+                        ),
+                        child: Row(children: [
+                          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            const Text('ACTIVE SYNC  /  OVERVIEW', style: TextStyle(color: kRed, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.3)),
+                            const SizedBox(height: 10),
+                            Text('Welcome back, ${Auth.admin?['fullName'] ?? 'Admin'}',
+                              style: const TextStyle(fontSize: 23, height: 1.15, fontWeight: FontWeight.w700)),
+                            const SizedBox(height: 5),
+                            Text(DateFormat('EEEE, MMMM d').format(DateTime.now()), style: const TextStyle(color: kMuted)),
+                          ])),
+                          const SizedBox(width: 14),
+                          Container(
+                            width: 52, height: 52,
+                            decoration: BoxDecoration(color: kRed.withValues(alpha: .14), borderRadius: BorderRadius.circular(17)),
+                            child: const Icon(Icons.bolt_rounded, color: kRed, size: 29),
+                          ),
+                        ]),
+                      ),
+                      const SizedBox(height: 24),
+                      const Text('Your business at a glance', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 12),
+                      LayoutBuilder(builder: (_, c) {
+                        final cols = c.maxWidth >= 1050 ? 5 : c.maxWidth >= 620 ? 3 : 2;
+                        final ratio = c.maxWidth < 390 ? .98 : c.maxWidth < 620 ? 1.12 : 1.45;
+                        return GridView.count(
+                          crossAxisCount: cols,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          childAspectRatio: ratio,
+                          children: cards,
+                        );
+                      }),
+                    ]),
+                  ),
+                ),
+              ],
+            );
+          });
         },
       ),
     );
@@ -687,16 +806,21 @@ class _Stat extends StatelessWidget {
   const _Stat(this.label, this.value, this.icon);
   @override
   Widget build(BuildContext context) => Card(
-        color: kCard,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: kDarkRed)),
         child: Padding(
           padding: const EdgeInsets.all(14),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Icon(icon, color: kRed),
-            FittedBox(child: Text(value, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold))),
-            Text(label, style: const TextStyle(color: Colors.white70)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(color: kRed.withValues(alpha: .13), borderRadius: BorderRadius.circular(11)),
+              child: Icon(icon, color: kRed, size: 19),
+            ),
+            const Spacer(),
+            FittedBox(alignment: Alignment.centerLeft, fit: BoxFit.scaleDown,
+              child: Text(value, maxLines: 1, style: const TextStyle(fontSize: 25, height: 1, fontWeight: FontWeight.w700))),
+            const SizedBox(height: 7),
+            Text(label, maxLines: 2, overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: kMuted, fontSize: 12, height: 1.15)),
           ]),
         ),
       );
@@ -746,9 +870,15 @@ class _AddMemberPageState extends State<AddMemberPage> {
   @override
   Widget build(BuildContext context) => SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _form,
-          child: Column(children: [
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 640),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Form(
+                  key: _form,
+                  child: Column(children: [
             TextFormField(controller: nameC, decoration: const InputDecoration(labelText: 'Full Name'), validator: reqRule),
             const SizedBox(height: 12),
             TextFormField(
@@ -788,7 +918,11 @@ class _AddMemberPageState extends State<AddMemberPage> {
                 child: busy
                     ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
                     : const Text('Save Member')),
-          ]),
+                  ]),
+                ),
+              ),
+            ),
+          ),
         ),
       );
 }
