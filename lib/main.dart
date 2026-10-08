@@ -646,16 +646,14 @@ class _HomeShellState extends State<HomeShell> {
         ),
         title: Text(items[index].$1),
         actions: [
-          if (!desktop)
-            Builder(builder: (drawerContext) => IconButton(
-              tooltip: 'Open navigation menu',
-              icon: const Icon(Icons.menu_rounded),
-              onPressed: () => Scaffold.of(drawerContext).openDrawer(),
-            )),
-          IconButton(tooltip: 'Logout', icon: const Icon(Icons.logout), onPressed: () => _logout()),
+          Builder(builder: (drawerContext) => IconButton(
+            tooltip: 'Open navigation menu',
+            icon: const Icon(Icons.menu_rounded),
+            onPressed: () => Scaffold.of(drawerContext).openDrawer(),
+          )),
         ],
       ),
-      drawer: desktop ? null : Drawer(
+      drawer: Drawer(
         child: ListView(children: [
           DrawerHeader(
             decoration: const BoxDecoration(
@@ -701,15 +699,22 @@ class _HomeShellState extends State<HomeShell> {
               const VerticalDivider(width: 1),
               Expanded(
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 220),
+                  duration: const Duration(milliseconds: 260),
                   switchInCurve: Curves.easeOutCubic,
-                  transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
+                  switchOutCurve: Curves.easeInCubic,
+                  transitionBuilder: (child, animation) => FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(begin: const Offset(0, .012), end: Offset.zero).animate(animation),
+                      child: child,
+                    ),
+                  ),
                   child: KeyedSubtree(key: ValueKey(index), child: _page()),
                 ),
               ),
             ])
           : AnimatedSwitcher(
-              duration: const Duration(milliseconds: 240),
+              duration: const Duration(milliseconds: 260),
               switchInCurve: Curves.easeOutCubic,
               switchOutCurve: Curves.easeInCubic,
               transitionBuilder: (child, animation) => FadeTransition(
@@ -721,17 +726,6 @@ class _HomeShellState extends State<HomeShell> {
               ),
               child: KeyedSubtree(key: ValueKey(index), child: _page()),
             ),
-      bottomNavigationBar: !desktop ? NavigationBar(
-        selectedIndex: const [0, 1, 2, 3, 4].indexOf(index).clamp(0, 4).toInt(),
-        onDestinationSelected: (value) => setState(() => index = const [0, 1, 2, 3, 4][value]),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.person_add_alt_1_outlined), selectedIcon: Icon(Icons.person_add_alt_1), label: 'Add'),
-          NavigationDestination(icon: Icon(Icons.groups_outlined), selectedIcon: Icon(Icons.groups), label: 'Members'),
-          NavigationDestination(icon: Icon(Icons.autorenew_outlined), selectedIcon: Icon(Icons.autorenew), label: 'Renewal'),
-          NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'Pay'),
-        ],
-      ) : null,
     );
   }
 }
@@ -767,61 +761,48 @@ class DashboardPage extends StatelessWidget {
           ];
 
           return LayoutBuilder(builder: (context, constraints) {
-            final maxWidth = constraints.maxWidth >= 900 ? 1120.0 : double.infinity;
+            final maxWidth = constraints.maxWidth >= 900 ? 780.0 : double.infinity;
             return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+              padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
               children: [
                 Center(
                   child: ConstrainedBox(
                     constraints: BoxConstraints(maxWidth: maxWidth),
-                    child: Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(18),
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Row(children: [
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(colors: [Color(0xFF34376D), Color(0xFF174C52)]),
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: const Icon(Icons.bolt_rounded, color: Color(0xFF4CE0C1), size: 25),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Text('Welcome, ${Auth.admin?['fullName'] ?? 'Admin'}',
-                                maxLines: 1, overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w700)),
-                              const SizedBox(height: 3),
-                              Text(DateFormat('EEEE, MMMM d').format(DateTime.now()),
-                                style: const TextStyle(color: kMuted, fontSize: 12)),
-                            ])),
-                          ]),
-                          const SizedBox(height: 18),
-                          const Divider(height: 1, color: Color(0xFF2A3348)),
-                          const SizedBox(height: 16),
-                          Row(children: [
-                            const Expanded(child: Text('Business overview', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700))),
-                            Text('${cards.length} metrics', style: const TextStyle(color: kMuted, fontSize: 11)),
-                          ]),
-                          const SizedBox(height: 10),
-                          LayoutBuilder(builder: (_, c) {
-                            final cols = c.maxWidth >= 1020 ? 5 : c.maxWidth >= 650 ? 3 : 2;
-                            final ratio = c.maxWidth < 390 ? 1.35 : 1.55;
-                            return GridView.count(
-                              crossAxisCount: cols,
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              mainAxisSpacing: 9,
-                              crossAxisSpacing: 9,
-                              childAspectRatio: ratio,
-                              children: cards,
-                            );
-                          }),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(colors: [Color(0xFF292B58), Color(0xFF174C52)]),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: kRed.withValues(alpha: .22)),
+                        ),
+                        child: Row(children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: .08), borderRadius: BorderRadius.circular(13)),
+                            child: const Icon(Icons.bolt_rounded, color: Color(0xFF4CE0C1), size: 24),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text('Welcome, ${Auth.admin?['fullName'] ?? 'Admin'}',
+                              maxLines: 1, overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                            const SizedBox(height: 3),
+                            Text(DateFormat('EEEE, MMMM d').format(DateTime.now()),
+                              style: const TextStyle(color: kMuted, fontSize: 12)),
+                          ])),
                         ]),
                       ),
-                    ),
+                      const SizedBox(height: 20),
+                      const Text('Business overview', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 10),
+                      for (final card in cards) Padding(
+                        padding: const EdgeInsets.only(bottom: 9),
+                        child: card,
+                      ),
+                    ]),
                   ),
                 ),
               ],
@@ -839,26 +820,28 @@ class _Stat extends StatelessWidget {
   const _Stat(this.label, this.value, this.icon);
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        width: double.infinity,
+        constraints: const BoxConstraints(minHeight: 72),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFF20283A),
-          borderRadius: BorderRadius.circular(14),
+          color: kCard,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: const Color(0xFF303A50)),
         ),
         child: Row(children: [
           Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(color: kRed.withValues(alpha: .14), borderRadius: BorderRadius.circular(11)),
-            child: Icon(icon, color: kRed, size: 18),
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(color: kRed.withValues(alpha: .14), borderRadius: BorderRadius.circular(12)),
+            child: Icon(icon, color: kRed, size: 20),
           ),
           const SizedBox(width: 9),
           Expanded(child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
             FittedBox(alignment: Alignment.centerLeft, fit: BoxFit.scaleDown,
-              child: Text(value, maxLines: 1, style: const TextStyle(fontSize: 19, height: 1.05, fontWeight: FontWeight.w700))),
-            const SizedBox(height: 4),
+              child: Text(value, maxLines: 1, style: const TextStyle(fontSize: 20, height: 1.05, fontWeight: FontWeight.w700))),
+            const SizedBox(height: 3),
             Text(label, maxLines: 2, overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: kMuted, fontSize: 10, height: 1.1)),
+              style: const TextStyle(color: kMuted, fontSize: 11, height: 1.1)),
           ])),
         ]),
       );
