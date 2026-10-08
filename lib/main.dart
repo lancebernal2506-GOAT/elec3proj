@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crypto/crypto.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -78,6 +80,10 @@ String? reqRule(String? v) =>
     (v == null || v.trim().isEmpty) ? 'Required' : null;
 String? emailRule(String? v) =>
     (v == null || !emailRe.hasMatch(v.trim())) ? 'Enter a valid email' : null;
+String? phoneRule(String? v) =>
+    (v == null || !RegExp(r'^\+639\d{9}$').hasMatch(v.trim()))
+        ? 'Enter +63 followed by 10 mobile digits'
+        : null;
 
 void snack(BuildContext c, String msg) =>
     ScaffoldMessenger.of(c).showSnackBar(SnackBar(content: Text(msg)));
@@ -138,6 +144,22 @@ class StatusChip extends StatelessWidget {
 // ───────── Firestore ─────────
 final db = FirebaseFirestore.instance;
 
+Future<void> recordChange(String action, {String? subject}) async {
+  final actor = Auth.admin;
+  if (actor == null) return;
+  try {
+    await db.collection('activity').add({
+      'action': action,
+      'subject': subject ?? '',
+      'actorId': actor['id'],
+      'actorName': actor['fullName'] ?? 'Administrator',
+      'createdAt': Timestamp.now(),
+    });
+  } catch (_) {
+    // Keep a successful business change successful if activity logging is unavailable.
+  }
+}
+
 /// Auto-increment integer IDs (members, expenses) via transaction.
 Future<int> nextId(String name) => db.runTransaction((tx) async {
       final ref = db.collection('counters').doc(name);
@@ -181,6 +203,7 @@ Future<void> addMember({
     'expirationDate': Timestamp.fromDate(exp),
   });
   await b.commit();
+  await recordChange('Added member', subject: name);
 }
 
 Future<void> renewMember(String docId, Map<String, dynamic> m, String type) async {
@@ -203,6 +226,7 @@ Future<void> renewMember(String docId, Map<String, dynamic> m, String type) asyn
     'expirationDate': Timestamp.fromDate(exp),
   });
   await b.commit();
+  await recordChange('Renewed membership', subject: m['fullName']);
 }
 
 // ───────── Auth (admin accounts in Firestore, salted+iterated SHA-256) ─────────
@@ -264,7 +288,7 @@ class Auth {
     }
   }
 
-  static Future<String?> login(String id, String pw) async {
+  static Future<String?> login(String id, String pw, {required bool rememberMe}) async {
     const generic = 'Invalid username/email or password.';
     final k = id.trim().toLowerCase();
     try {
@@ -278,7 +302,11 @@ class Auth {
       if (_hash(pw, data['salt']) != data['passwordHash']) return generic;
       admin = {...data, 'id': d.id};
       final p = await SharedPreferences.getInstance();
-      await p.setString('adminId', d.id);
+      if (rememberMe) {
+        await p.setString('adminId', d.id);
+      } else {
+        await p.remove('adminId');
+      }
       return null;
     } catch (_) {
       return 'Something went wrong. Please try again.';
@@ -331,12 +359,13 @@ class _LoginPageState extends State<LoginPage> {
   final idC = TextEditingController();
   final pwC = TextEditingController();
   bool busy = false, hide = true;
+  bool rememberMe = true;
   String? error;
 
   Future<void> _login() async {
     if (!_form.currentState!.validate()) return;
     setState(() { busy = true; error = null; });
-    final err = await Auth.login(idC.text, pwC.text);
+    final err = await Auth.login(idC.text, pwC.text, rememberMe: rememberMe);
     if (!mounted) return;
     if (err != null) {
       setState(() { busy = false; error = err; });
@@ -368,6 +397,13 @@ class _LoginPageState extends State<LoginPage> {
               ),
               validator: reqRule,
               onFieldSubmitted: (_) => _login(),
+            ),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              value: rememberMe,
+              onChanged: (value) => setState(() => rememberMe = value ?? false),
+              title: const Text('Remember me'),
+              controlAffinity: ListTileControlAffinity.leading,
             ),
             if (error != null)
               Padding(
@@ -403,6 +439,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final userC = TextEditingController();
   final pwC = TextEditingController();
   bool busy = false;
+  bool rememberMe = true;
   String? error;
 
   Future<void> _register() async {
@@ -414,9 +451,15 @@ class _RegisterPageState extends State<RegisterPage> {
       setState(() { busy = false; error = err; });
       return;
     }
+    if (rememberMe) {
+      final loginError = await Auth.login(userC.text, pwC.text, rememberMe: true);
+      if (loginError == null && mounted) {
+        Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const HomeShell()), (_) => false);
+        return;
+      }
+    }
     snack(context, 'Account created. Please log in.');
-    Navigator.pushAndRemoveUntil(
-        context, MaterialPageRoute(builder: (_) => const LoginPage()), (_) => false);
+    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginPage()), (_) => false);
   }
 
   @override
@@ -444,6 +487,13 @@ class _RegisterPageState extends State<RegisterPage> {
               decoration: const InputDecoration(labelText: 'Password'),
               validator: (v) => (v == null || v.length < 6) ? 'At least 6 characters' : null,
             ),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              value: rememberMe,
+              onChanged: (value) => setState(() => rememberMe = value ?? false),
+              title: const Text('Remember me'),
+              controlAffinity: ListTileControlAffinity.leading,
+            ),
             if (error != null)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
@@ -467,10 +517,29 @@ class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
   @override
   State<HomeShell> createState() => _HomeShellState();
-}
+} 
 
 class _HomeShellState extends State<HomeShell> {
   int index = 0;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _activitySub;
+  bool _activityReady = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _activitySub = db.collection('activity').orderBy('createdAt', descending: true).limit(1).snapshots().listen((snapshot) {
+      if (!_activityReady) { _activityReady = true; return; }
+      for (final change in snapshot.docChanges) {
+        if (change.type != DocumentChangeType.added || change.doc.data()?['actorId'] == Auth.admin?['id']) continue;
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('${change.doc.data()?['actorName']}: ${change.doc.data()?['action']} ${change.doc.data()?['subject']}'),
+        ));
+      }
+    });
+  }
+
+  @override
+  void dispose() { _activitySub?.cancel(); super.dispose(); }
 
   static const items = [
     ('Dashboard', Icons.dashboard),
@@ -492,8 +561,8 @@ class _HomeShellState extends State<HomeShell> {
         _ => const ExpensesPage(),
       };
 
-  Future<void> _logout() async {
-    Navigator.pop(context); // close drawer
+  Future<void> _logout({bool closeDrawer = false}) async {
+    if (closeDrawer) Navigator.pop(context);
     if (!await confirm(context, 'Logout', 'Do you want to log out?')) return;
     await Auth.logout();
     if (!mounted) return;
@@ -503,9 +572,15 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
+    final desktop = MediaQuery.sizeOf(context).width >= 900;
     return Scaffold(
-      appBar: AppBar(title: Text(items[index].$1)),
-      drawer: Drawer(
+      appBar: AppBar(
+        title: Text(items[index].$1),
+        actions: [
+          IconButton(tooltip: 'Logout', icon: const Icon(Icons.logout), onPressed: () => _logout()),
+        ],
+      ),
+      drawer: desktop ? null : Drawer(
         child: ListView(children: [
           DrawerHeader(
             decoration: const BoxDecoration(color: kDarkRed),
@@ -528,10 +603,26 @@ class _HomeShellState extends State<HomeShell> {
               },
             ),
           const Divider(),
-          ListTile(leading: const Icon(Icons.logout), title: const Text('Logout'), onTap: _logout),
+          ListTile(leading: const Icon(Icons.logout), title: const Text('Logout'), onTap: () => _logout(closeDrawer: true)),
         ]),
       ),
-      body: _page(),
+      body: desktop
+          ? Row(children: [
+              NavigationRail(
+                extended: MediaQuery.sizeOf(context).width >= 1200,
+                selectedIndex: index,
+                onDestinationSelected: (value) => setState(() => index = value),
+                destinations: [for (final item in items) NavigationRailDestination(icon: Icon(item.$2), label: Text(item.$1))],
+              ),
+              const VerticalDivider(width: 1),
+              Expanded(child: _page()),
+            ])
+          : _page(),
+      bottomNavigationBar: !desktop ? NavigationBar(
+        selectedIndex: index,
+        onDestinationSelected: (value) => setState(() => index = value),
+        destinations: [for (final item in items.take(5)) NavigationDestination(icon: Icon(item.$2), label: item.$1)],
+      ) : null,
     );
   }
 }
@@ -635,7 +726,7 @@ class _AddMemberPageState extends State<AddMemberPage> {
     try {
       await addMember(
         name: nameC.text.trim(),
-        contact: contactC.text.trim(),
+        contact: '+63${contactC.text.trim()}',
         email: emailC.text.trim(),
         address: addressC.text.trim(),
         type: type,
@@ -663,8 +754,10 @@ class _AddMemberPageState extends State<AddMemberPage> {
             TextFormField(
               controller: contactC,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: 'Contact Number'),
-              validator: (v) => (v == null || v.trim().length < 7) ? 'Enter a valid contact number' : null,
+              maxLength: 10,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(10)],
+              decoration: const InputDecoration(labelText: 'Mobile Number', prefixText: '+63 ', counterText: ''),
+              validator: (v) => (v == null || !RegExp(r'^9\d{9}$').hasMatch(v.trim())) ? 'Enter 10 digits starting with 9' : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -718,7 +811,7 @@ class _ManageMembersPageState extends State<ManageMembersPage> {
   Future<void> _edit(String id, Map<String, dynamic> m) async {
     final form = GlobalKey<FormState>();
     final n = TextEditingController(text: m['fullName']);
-    final c = TextEditingController(text: m['contact']);
+    final c = TextEditingController(text: (m['contact'] as String).replaceFirst(RegExp(r'^\+63'), ''));
     final e = TextEditingController(text: m['email']);
     final a = TextEditingController(text: m['address']);
     final ok = await showDialog<bool>(
@@ -731,7 +824,10 @@ class _ManageMembersPageState extends State<ManageMembersPage> {
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               TextFormField(controller: n, decoration: const InputDecoration(labelText: 'Full Name'), validator: reqRule),
               const SizedBox(height: 8),
-              TextFormField(controller: c, decoration: const InputDecoration(labelText: 'Contact'), validator: reqRule),
+              TextFormField(controller: c, keyboardType: TextInputType.phone, maxLength: 10,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(10)],
+                decoration: const InputDecoration(labelText: 'Mobile Number', prefixText: '+63 ', counterText: ''),
+                validator: (v) => (v == null || !RegExp(r'^9\d{9}$').hasMatch(v.trim())) ? 'Enter 10 digits starting with 9' : null),
               const SizedBox(height: 8),
               TextFormField(controller: e, decoration: const InputDecoration(labelText: 'Email'), validator: emailRule),
               const SizedBox(height: 8),
@@ -752,16 +848,18 @@ class _ManageMembersPageState extends State<ManageMembersPage> {
     if (ok != true) return;
     await db.collection('members').doc(id).update({
       'fullName': n.text.trim(),
-      'contact': c.text.trim(),
+      'contact': '+63${c.text.trim()}',
       'email': e.text.trim(),
       'address': a.text.trim(),
     });
+    await recordChange('Updated member details', subject: n.text.trim());
     if (mounted) snack(context, 'Member updated.');
   }
 
   Future<void> _delete(String id, String name) async {
     if (!await confirm(context, 'Delete Member', 'Delete $name? This cannot be undone.')) return;
     await db.collection('members').doc(id).delete();
+    await recordChange('Deleted member', subject: name);
     if (mounted) snack(context, 'Member deleted.');
   }
 
@@ -772,6 +870,7 @@ class _ManageMembersPageState extends State<ManageMembersPage> {
       return;
     }
     await db.collection('members').doc(id).update({'status': frozen ? 'Active' : 'Frozen'});
+    await recordChange(frozen ? 'Unfroze membership' : 'Froze membership', subject: m['fullName']);
   }
 
   @override
@@ -914,6 +1013,7 @@ class RenewalPage extends StatelessWidget {
                     Text('${m['contact']}  •  ${m['email']}'),
                     Text('Type: ${m['membershipType']}'),
                     Text('Expires: ${fmtDate(exp)}  (${daysLeft(exp)} days remaining)'),
+                    Text('Added: ${fmtDateTime(dt(m['createdAt']))}', style: const TextStyle(color: Colors.white60)),
                     const SizedBox(height: 8),
                     Align(
                       alignment: Alignment.centerRight,
@@ -1072,6 +1172,7 @@ class _ExpensesPageState extends State<ExpensesPage> {
         'amount': double.parse(amountC.text.trim()),
         'createdAt': Timestamp.now(),
       });
+      await recordChange('Added expense', subject: '$type expense');
       if (!mounted) return;
       amountC.clear();
       snack(context, 'Expense saved.');
@@ -1357,14 +1458,23 @@ class PdfService {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  final loggedIn = await Auth.restore();
-  runApp(MyApp(loggedIn: loggedIn));
+  runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
-  final bool loggedIn;
-  const MyApp({super.key, required this.loggedIn});
+class MyApp extends StatefulWidget {
+  const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late final Future<bool> _startup = _initialize();
+
+  Future<bool> _initialize() async {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    return Auth.restore();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1372,7 +1482,34 @@ class MyApp extends StatelessWidget {
       title: 'ActiveSync',
       debugShowCheckedModeBanner: false,
       theme: appTheme(),
-      home: loggedIn ? const HomeShell() : const LoginPage(),
+      home: FutureBuilder<bool>(
+        future: _startup,
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const _StartupScreen(message: 'Unable to connect. Please restart the app.');
+          }
+          if (!snapshot.hasData) return const _StartupScreen();
+          return snapshot.data! ? const HomeShell() : const LoginPage();
+        },
+      ),
     );
   }
+}
+
+class _StartupScreen extends StatelessWidget {
+  final String message;
+  const _StartupScreen({this.message = 'Loading ActiveSync…'});
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        body: Center(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.fitness_center, size: 64, color: kRed),
+            const SizedBox(height: 16),
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(message, style: const TextStyle(color: Colors.white70)),
+          ]),
+        ),
+      );
 }
