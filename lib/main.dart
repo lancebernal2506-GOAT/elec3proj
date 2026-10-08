@@ -489,7 +489,7 @@ class _AuthFrame extends StatelessWidget {
               constraints: const BoxConstraints(maxWidth: 420),
               child: Column(children: [
                 const Icon(Icons.fitness_center, size: 64, color: kRed),
-                const Text('ActiveSync',
+                const Text('FitCore',
                     style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 Text(title, style: const TextStyle(color: kMuted)),
